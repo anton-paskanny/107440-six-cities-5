@@ -1,131 +1,131 @@
-# Как работать над проектом
+# How to work on the project
 
-## Окружение
+## Environment
 
-Для удобства работы над проектом используются инструменты из **Node.js** и **npm**. Все необходимые настройки произведены. Убедитесь, что на рабочем компьютере установлен актуальный LTS релиз Node.js**. Актуальная версия **Node.js\*\* указана в файле `package.json` в поле `node`. Затем, в терминале, перейдите в директорию с проектом и _единожды_ запустите команду:
+For convenience when working on the project, tools from **Node.js** and **npm** are used. All necessary settings have been made. Make sure that the current LTS release of **Node.js** is installed on your work computer. The current **Node.js** version is specified in the `package.json` file in the `node` field. Then, in the terminal, navigate to the project directory and run the command _once_:
 
 ```bash
 npm install
 ```
 
-Команда запустит процесс установки зависимостей проекта из **npm**.
+The command will start the process of installing project dependencies from **npm**.
 
-### Сценарии
+### Scripts
 
-В `package.json` предопределено несколько сценариев.
+Several scripts are predefined in `package.json`.
 
-#### Скомпилировать проект
+#### Compile the project
 
 ```bash
 npm run compile
 ```
 
-Создаст директорию `dist` и скомпилирует проект.
+Creates a `dist` directory and compiles the project.
 
-#### Удалить скомпилированный проект
+#### Remove the compiled project
 
 ```bash
 npm run clean
 ```
 
-Удаляет директорию `dist`. Используется перед компиляцией.
+Removes the `dist` directory. Used before compilation.
 
-#### Собрать проект
+#### Build the project
 
 ```bash
 npm run build
 ```
 
-Выполняет сборку проекта: удаляет ранее скомпилированный проект и компилирует заново.
+Performs project build: removes the previously compiled project and recompiles it.
 
-#### Проверить линтером
+#### Check with linter
 
 ```bash
 npm run lint
 ```
 
-Запуск проверки проекта статическим анализатором кода **ESLint**.
+Run project verification with the **ESLint** static code analyzer.
 
-Линтер проверяет файлы только внутри директории `src`.
+The linter checks files only inside the `src` directory.
 
-**Обратите внимание**, при запуске данной команды, ошибки выводятся в терминал.
+**Please note** that when running this command, errors are output to the terminal.
 
-#### Исправить ошибки линтера
+#### Fix linter errors
 
 ```bash
 npm run lint:fix
 ```
 
-Запуск исправления ошибок, найденных **ESLint**.
+Run fixing of errors found by **ESLint**.
 
-Линтер проверяет файлы только внутри директории `src`.
+The linter checks files only inside the `src` directory.
 
-#### Исправить форматирования файлов
+#### Fix file formatting
 
 ```bash
 npm run prettier:format
 ```
 
-Запуск исправления ошибок форматирования, найденных **Prettier**.
+Run fixing of formatting errors found by **Prettier**.
 
-#### Запустить ts-модуль без компиляции
-
-```bash
-npm run ts -- <Путь к модулю с ts-кодом>
-```
-
-Пакет `ts-node` позволяет выполнить TS-код в Node.js без предварительной компиляции. Используется только на этапе разработки.
-
-#### Запустить cli модуль для генерации файла с предложениями по аренде
+#### Run ts-module without compilation
 
 ```bash
-npm run ts -- <Путь к cli модулю> -- --generate <Кол-во предложений> <Путь, где нужно сохранить tsv файл с моковыми данными> <Адрес API сервера>
+npm run ts -- <Path to module with ts-code>
 ```
 
-#### Запустить cli модуль для импорта предложений по аренде из tsv файла с последующим сохранением в БД
+The `ts-node` package allows you to execute TS code in Node.js without prior compilation. Used only during development.
+
+#### Run cli module to generate a file with rental offers
 
 ```bash
-npm run ts -- <Путь к cli модулю> -- --import <Путь к tsv файлу с моковыми данными> <Логин для БД> <Пароль для БД> <Порт, на котором запущена БД> <Название базы данных> <Секрет>
+npm run ts -- <Path to cli module> -- --generate <Number of offers> <Path where to save the tsv file with mock data> <API server address>
 ```
 
-#### Запустить JSON-Server
+#### Run cli module to import rental offers from tsv file with subsequent saving to database
+
+```bash
+npm run ts -- <Path to cli module> -- --import <Path to tsv file with mock data> <Database login> <Database password> <Port on which the database is running> <Database name> <Secret>
+```
+
+#### Run JSON-Server
 
 ```bash
 npm run mock:servre
 ```
 
-Запуск сервера для предоставления моковых данных по api.
+Start the server to provide mock data via api.
 
-#### Запустить проект
+#### Run the project
 
 ```bash
 npm start
 ```
 
-В процессе запуска проекта будет выполнен процесс «Сборки проекта» и запуска результирующего кода.
+During project startup, the "Build project" process will be executed and the resulting code will be launched.
 
-#### Запустить проект в development режиме
+#### Run the project in development mode
 
 ```bash
 npm start:dev
 ```
 
-В процессе запуска проекта будут инициализированы сервисы из файла main.rest.ts. Конфигурация описана в файле nodemon.json.
+During project startup, services from the main.rest.ts file will be initialized. Configuration is described in the nodemon.json file.
 
-## Структура проекта
+## Project Structure
 
-### Директория `src`
+### `src` Directory
 
-Исходный код проекта: компоненты, модули и так далее. Структура директории `src` может быть произвольной.
+Source code of the project: components, modules, and so on. The structure of the `src` directory can be arbitrary.
 
-### Файл `Readme.md`
+### `Readme.md` File
 
-Инструкции по работе с учебным репозиторием.
+Instructions for working with the educational repository.
 
-### Файл `Contributing.md`
+### `Contributing.md` File
 
-Советы и инструкции по внесению изменений в учебный репозиторий.
+Tips and instructions for making changes to the educational repository.
 
-### Остальное
+### Everything else
 
-Все остальные файлы в проекте являются служебными. Пожалуйста, не удаляйте и не изменяйте их самовольно. Только если того требует задание или наставник.
+All other files in the project are service files. Please do not delete or change them arbitrarily. Only if required by the assignment or mentor.
