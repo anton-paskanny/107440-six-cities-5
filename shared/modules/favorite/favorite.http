@@ -1,0 +1,17 @@
+## List my favorites
+GET http://localhost:4000/favorites HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3QyQHRlc3QyLmNvbSIsImZpcnN0TmFtZSI6IlRlc3QyIiwibGFzdE5hbWUiOiJUZXN0MiIsImlkIjoiNjg5NTE2MjMwNzUzMTE4MWU2MjkxNjdhIiwiaWF0IjoxNzU0NzI4NzQ1LCJleHAiOjE3NTQ5MDE1NDV9.oTb9dtak6OGkVs2gBBsdMnn0hGiQRJduUsKhxnQE7jk
+
+###
+
+## Add to favorites
+PUT http://localhost:4000/favorites/6546acebf3e30d6c7af7a4f3 HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3QyQHRlc3QyLmNvbSIsImZpcnN0TmFtZSI6IlRlc3QyIiwibGFzdE5hbWUiOiJUZXN0MiIsImlkIjoiNjg5NTE2MjMwNzUzMTE4MWU2MjkxNjdhIiwiaWF0IjoxNzU0NzI4NzQ1LCJleHAiOjE3NTQ5MDE1NDV9.oTb9dtak6OGkVs2gBBsdMnn0hGiQRJduUsKhxnQE7jk
+
+###
+
+## Remove from favorites
+DELETE http://localhost:4000/favorites/6546acebf3e30d6c7af7a4f3 HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InRlc3QyQHRlc3QyLmNvbSIsImZpcnN0TmFtZSI6IlRlc3QyIiwibGFzdE5hbWUiOiJUZXN0MiIsImlkIjoiNjg5NTE2MjMwNzUzMTE4MWU2MjkxNjdhIiwiaWF0IjoxNzU0NzI4NzQ1LCJleHAiOjE3NTQ5MDE1NDV9.oTb9dtak6OGkVs2gBBsdMnn0hGiQRJduUsKhxnQE7jk
+
+

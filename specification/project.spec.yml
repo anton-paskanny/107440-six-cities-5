@@ -94,12 +94,12 @@ paths:
       summary: Upload avatar image
       description: Uploads an image of user's avatar. The image should be in `png` or `jpg` format.
 
-  /users/rentOffers/favorite:
+  /favorites:
     get:
       tags:
-        - users
-      summary: Get a list of favorite rent offers
-      description: Returns a list of favorite rent offers for a specific user
+        - favorites
+      summary: Get my favorite rent offers
+      description: Returns a list of favorite rent offers for the authenticated user
 
       responses:
         "200":
@@ -109,41 +109,37 @@ paths:
                 schema:
                   $ref: '#/components/schemas/shortRentOffer'
 
-  /users/rentOffers/{rentOfferId}/favorite:
-    post:
+  /favorites/{rentOfferId}:
+    put:
       tags:
-        - users
-      summary: Add rent offer to a favorite list for a specific user
-      description: Returns a list of favorite rent offers for a specific user
-
+        - favorites
+      summary: Add rent offer to my favorites
       parameters:
-        - in: query
+        - in: path
           name: rentOfferId
           required: true
           schema:
-            type: integer
-          description: Unique idetifier of a rent offer
+            type: string
+          description: Unique identifier of a rent offer
 
       responses:
         "200":
-            description: A list of favorite rent offers.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/shortRentOffer'
+          description: A list of favorite rent offers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/shortRentOffer'
     delete:
       tags:
-        - users
-      summary: Remove rent offer from a favorite list for a specific user
-      description: Returns a list of favorite rent offers for a specific user
-
+        - favorites
+      summary: Remove rent offer from my favorites
       parameters:
-        - in: query
+        - in: path
           name: rentOfferId
           required: true
           schema:
-            type: integer
-          description: Unique idetifier of a rent offer
+            type: string
+          description: Unique identifier of a rent offer
 
       responses:
         "200":

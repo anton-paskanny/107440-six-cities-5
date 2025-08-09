@@ -3,13 +3,12 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import {
   BaseController,
-  DocumentExistsMiddleware,
   HttpError,
   HttpMethod,
   UploadFileMiddleware,
   ValidateDtoMiddleware,
-  ValidateObjectIdMiddleware,
-  PrivateRouteMiddleware
+  PrivateRouteMiddleware,
+  ValidateObjectIdMiddleware
 } from '../../libs/rest/index.js';
 import { UserService } from './user.service.interface.js';
 import { Config, RestSchema } from '../../libs/config/index.js';
@@ -23,12 +22,6 @@ import { CreateUserDto } from './index.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
 import { AuthService } from '../auth/index.js';
 import { LoggedUserRdo } from './rdo/logged.user.rdo.js';
-import { RentOfferService } from '../rent-offer/rent-offer.service.interface.js';
-import {
-  FavoriteService,
-  FavoriteRdo,
-  ParamFavoriteReq
-} from '../favorite/index.js';
 import { UploadUserAvatarRdo } from './rdo/upload.user.avatar.rdo.js';
 
 @injectable()
@@ -38,11 +31,7 @@ export class UserController extends BaseController {
     @inject(Component.UserService) private readonly userService: UserService,
     @inject(Component.Config)
     private readonly configService: Config<RestSchema>,
-    @inject(Component.AuthService) private readonly authService: AuthService,
-    @inject(Component.RentOfferService)
-    private readonly rentOfferService: RentOfferService,
-    @inject(Component.FavoriteService)
-    private readonly favoriteService: FavoriteService
+    @inject(Component.AuthService) private readonly authService: AuthService
   ) {
     super(logger);
     this.logger.info('Register routes for UserController…');
@@ -68,6 +57,13 @@ export class UserController extends BaseController {
     });
 
     this.addRoute({
+      path: '/logout',
+      method: HttpMethod.Post,
+      handler: this.logout,
+      middlewares: [new PrivateRouteMiddleware()]
+    });
+
+    this.addRoute({
       path: '/:userId/avatar',
       method: HttpMethod.Post,
       handler: this.uploadAvatar,
@@ -76,43 +72,6 @@ export class UserController extends BaseController {
         new UploadFileMiddleware(
           this.configService.get('UPLOAD_DIRECTORY'),
           'avatar'
-        )
-      ]
-    });
-
-    this.addRoute({
-      path: '/rentOffers/favorite',
-      method: HttpMethod.Get,
-      handler: this.getFavorite,
-      middlewares: [new PrivateRouteMiddleware()]
-    });
-
-    this.addRoute({
-      path: '/rentOffers/:rentOfferId/favorite',
-      method: HttpMethod.Post,
-      handler: this.addFavorite,
-      middlewares: [
-        new PrivateRouteMiddleware(),
-        new ValidateObjectIdMiddleware('rentOfferId'),
-        new DocumentExistsMiddleware(
-          this.rentOfferService,
-          'RentOffer',
-          'rentOfferId'
-        )
-      ]
-    });
-
-    this.addRoute({
-      path: '/rentOffers/:rentOfferId/favorite',
-      method: HttpMethod.Delete,
-      handler: this.removeFavorite,
-      middlewares: [
-        new PrivateRouteMiddleware(),
-        new ValidateObjectIdMiddleware('rentOfferId'),
-        new DocumentExistsMiddleware(
-          this.rentOfferService,
-          'RentOffer',
-          'rentOfferId'
         )
       ]
     });
@@ -175,81 +134,26 @@ export class UserController extends BaseController {
     this.ok(res, fillDTO(LoggedUserRdo, foundedUser));
   }
 
-  public async getFavorite(
-    { tokenPayload }: Request,
-    res: Response
-  ): Promise<void> {
-    const { id } = tokenPayload || {};
+  public async logout({ tokenPayload }: Request, res: Response): Promise<void> {
+    const { email } = tokenPayload || {};
 
-    const result = await this.favoriteService.findByUserId(id);
-
-    const filledData = fillDTO(FavoriteRdo, result);
-
-    filledData?.favorites?.forEach((item) => (item.isFavorite = true));
-
-    this.ok(res, filledData);
-  }
-
-  public async addFavorite(
-    { params, tokenPayload }: Request<ParamFavoriteReq>,
-    res: Response
-  ): Promise<void> {
-    console.log('addToFavorite');
-    const { id } = tokenPayload || {};
-
-    const dublicate = await this.favoriteService.findFavoriteById({
-      userId: id,
-      rentOfferId: params.rentOfferId
-    });
-
-    if (dublicate) {
+    if (!email) {
       throw new HttpError(
-        StatusCodes.BAD_REQUEST,
-        `Rent Offer with id ${params.rentOfferId} is already added into favorite list.`,
-        'RentOfferController'
+        StatusCodes.UNAUTHORIZED,
+        'Unauthorized',
+        'UserController'
       );
     }
 
-    const result = await this.favoriteService.addToFavorite({
-      userId: id,
-      rentOfferId: params.rentOfferId
+    // Log the logout action for audit purposes
+    this.logger.info(`User ${email} logged out successfully`);
+
+    // Return success response
+    // Note: In a JWT-based system, the actual token invalidation happens client-side
+    // by removing the token from storage. The server validates the token was valid
+    // before processing the logout request.
+    this.ok(res, {
+      message: 'Logged out successfully'
     });
-
-    const filledData = fillDTO(FavoriteRdo, result);
-
-    filledData?.favorites?.forEach((item) => (item.isFavorite = true));
-
-    this.ok(res, filledData);
-  }
-
-  public async removeFavorite(
-    { params, tokenPayload }: Request<ParamFavoriteReq>,
-    res: Response
-  ): Promise<void> {
-    const { id } = tokenPayload || {};
-
-    const favoriteObj = await this.favoriteService.findFavoriteById({
-      userId: id,
-      rentOfferId: params.rentOfferId
-    });
-
-    if (!favoriteObj) {
-      throw new HttpError(
-        StatusCodes.BAD_REQUEST,
-        `Rent Offer with id ${params.rentOfferId} does not exist in favorite list.`,
-        'RentOfferController'
-      );
-    }
-
-    const result = await this.favoriteService.removeFromFavorite({
-      userId: id,
-      rentOfferId: params.rentOfferId
-    });
-
-    const filledData = fillDTO(FavoriteRdo, result);
-
-    filledData?.favorites?.forEach((item) => (item.isFavorite = true));
-
-    this.ok(res, filledData);
   }
 }
