@@ -15,6 +15,6 @@ export const CreateUserMessages = {
     lengthField: 'min length for password is 6, max is 12'
   },
   type: {
-    invalid: 'Type must be Pro or Usual'
+    invalid: 'Type must be Pro or Regular'
   }
 } as const;

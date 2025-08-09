@@ -74,7 +74,7 @@ export class TSVOfferGenerator implements OfferGenerator {
 
     const [firstName, lastName] = user.split(' ');
 
-    const userType = getRandomItem<string>([UserType.Pro, UserType.Usual]);
+    const userType = getRandomItem<string>([UserType.Pro, UserType.Regular]);
 
     const { name, latitude, longitude } = city;
 

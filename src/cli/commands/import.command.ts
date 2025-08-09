@@ -95,7 +95,6 @@ export class ImportCommand implements Command {
       cityId: existCity.id,
       title: offer.title,
       description: offer.description,
-      preview: offer.preview,
       images: offer.images,
       publishDate: offer.publishDate,
       isPremium: offer.isPremium,
