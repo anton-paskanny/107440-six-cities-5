@@ -9,15 +9,16 @@
   ],
   "main": "main.js",
   "scripts": {
-    "start": "npm run build && node ./dist/main.rest.js",
-    "start:dev": "nodemon",
-    "build": "npm run clean && npm run compile",
+    "start": "node ./dist/src/main.rest.js",
+    "start:dev": "concurrently -n tsc,nodemon -k \"npm:watch:tsc\" \"npm:watch:nodemon\"",
+    "build": "rimraf dist && tsc -p tsconfig.json",
     "lint": "eslint src/ --ext .ts",
     "lint:fix": "eslint --fix --ext .ts",
     "compile": "tsc -p tsconfig.json",
     "clean": "rimraf dist",
     "prettier:format": "prettier --config .prettierrc . --write",
-    "ts": "ts-node",
+    "watch:tsc": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "watch:nodemon": "nodemon",
     "mock:server": "json-server ./mocks/mock-server-data.json --port 5173"
   },
   "devDependencies": {
@@ -30,6 +31,7 @@
     "@types/node": "18.17.17",
     "@typescript-eslint/eslint-plugin": "6.7.0",
     "@typescript-eslint/parser": "6.7.0",
+    "concurrently": "^9.2.0",
     "eslint": "8.49.0",
     "eslint-config-htmlacademy": "9.1.1",
     "eslint-config-prettier": "9.0.0",
@@ -39,7 +41,7 @@
     "pino-pretty": "10.2.3",
     "prettier": "3.0.3",
     "rimraf": "5.0.1",
-    "ts-node": "10.9.1",
+    "ts-node": "^10.9.2",
     "typescript": "5.2.2"
   },
   "type": "module",

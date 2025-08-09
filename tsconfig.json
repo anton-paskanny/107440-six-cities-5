@@ -22,7 +22,7 @@
     "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "types": [
-      "node",
+      "node"
     ],
     "lib": [
       "ESNext"
@@ -30,6 +30,7 @@
   },
   "include": [
     "src/**/*.ts",
+    "shared/**/*.ts",
     "src/cli/commands/command.interface.ts"
   ],
   "exclude": [
