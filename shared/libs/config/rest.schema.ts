@@ -15,6 +15,13 @@ export type RestSchema = {
   JWT_SECRET: string;
   HOST: string;
   STATIC_DIRECTORY_PATH: string;
+  MAX_REQUEST_SIZE: number;
+  // Rate limiting configuration
+  RATE_LIMIT_WINDOW_MS: number;
+  RATE_LIMIT_MAX_PUBLIC: number;
+  RATE_LIMIT_MAX_AUTH: number;
+  RATE_LIMIT_MAX_UPLOAD: number;
+  RATE_LIMIT_MAX_USER_API: number;
 };
 
 export const configRestSchema = convict<RestSchema>({
@@ -83,5 +90,42 @@ export const configRestSchema = convict<RestSchema>({
     format: String,
     env: 'STATIC_DIRECTORY_PATH',
     default: 'static'
+  },
+  // Rate limiting configuration
+  RATE_LIMIT_WINDOW_MS: {
+    doc: 'Rate limiting window in milliseconds',
+    format: Number,
+    env: 'RATE_LIMIT_WINDOW_MS',
+    default: 60 * 1000 // 1 minute
+  },
+  RATE_LIMIT_MAX_PUBLIC: {
+    doc: 'Maximum requests per window for public endpoints',
+    format: Number,
+    env: 'RATE_LIMIT_MAX_PUBLIC',
+    default: 100
+  },
+  RATE_LIMIT_MAX_AUTH: {
+    doc: 'Maximum requests per window for authentication endpoints',
+    format: Number,
+    env: 'RATE_LIMIT_MAX_AUTH',
+    default: 5
+  },
+  RATE_LIMIT_MAX_UPLOAD: {
+    doc: 'Maximum requests per window for file upload endpoints',
+    format: Number,
+    env: 'RATE_LIMIT_MAX_UPLOAD',
+    default: 10
+  },
+  RATE_LIMIT_MAX_USER_API: {
+    doc: 'Maximum requests per window for user API endpoints',
+    format: Number,
+    env: 'RATE_LIMIT_MAX_USER_API',
+    default: 1000
+  },
+  MAX_REQUEST_SIZE: {
+    doc: 'Maximum request size in bytes',
+    format: Number,
+    env: 'MAX_REQUEST_SIZE',
+    default: 10 * 1024 * 1024 // 10MB
   }
 });

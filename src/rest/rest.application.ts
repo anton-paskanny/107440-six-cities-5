@@ -1,6 +1,7 @@
 import { inject, injectable } from 'inversify';
 import express, { Express } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { Config, RestSchema } from '../../shared/libs/config/index.js';
 import { Logger } from '../../shared/libs/logger/index.js';
 import { Component } from '../../shared/types/index.js';
@@ -8,6 +9,7 @@ import { DatabaseClient } from '../../shared/libs/database-client/index.js';
 import { getMongoURI, getFullServerPath } from '../../shared/helpers/index.js';
 import { Controller, ExceptionFilter } from '../../shared/libs/rest/index.js';
 import { ParseTokenMiddleware } from '../../shared/libs/rest/middleware/parse-token.middleware.js';
+import { RateLimiterMiddleware } from '../../shared/libs/rest/middleware/rate-limiter.middleware.js';
 import { STATIC_FILES_ROUTE, STATIC_UPLOAD_ROUTE } from './rest.constants.js';
 
 @injectable()
@@ -71,7 +73,23 @@ export class RestApplication {
       this.config.get('JWT_SECRET')
     );
 
-    this.server.use(express.json());
+    // Apply security headers
+    this.server.use(helmet());
+
+    // Apply rate limiting early in the middleware chain (single instance)
+    const rateLimiter = new RateLimiterMiddleware(this.config);
+    this.server.use(rateLimiter.execute.bind(rateLimiter));
+
+    // Apply request size limits
+    this.server.use(
+      express.json({ limit: this.config.get('MAX_REQUEST_SIZE') })
+    );
+    this.server.use(
+      express.urlencoded({
+        extended: true,
+        limit: this.config.get('MAX_REQUEST_SIZE')
+      })
+    );
     this.server.use(
       STATIC_UPLOAD_ROUTE,
       express.static(this.config.get('UPLOAD_DIRECTORY'))
@@ -85,7 +103,19 @@ export class RestApplication {
       express.static(this.config.get('STATIC_DIRECTORY_PATH'))
     );
 
-    this.server.use(cors());
+    // Configure CORS with more restrictive settings
+    this.server.use(
+      cors({
+        origin:
+          process.env.NODE_ENV === 'production'
+            ? [this.config.get('HOST')]
+            : true, // Allow all origins in development
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        maxAge: 86400 // 24 hours
+      })
+    );
   }
 
   private async _initExceptionFilters() {

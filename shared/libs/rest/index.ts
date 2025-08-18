@@ -18,5 +18,6 @@ export * from './middleware/upload-file.middleware.js';
 export * from './middleware/upload-multiple-files.middleware.js';
 export * from './middleware/parse-token.middleware.js';
 export * from './middleware/private-route.middleware.js';
+export * from './middleware/rate-limiter.middleware.js';
 export * from './types/validation-error-field.type.js';
 export * from './types/application-error.enum.js';

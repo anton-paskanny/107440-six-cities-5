@@ -16,7 +16,6 @@ This is a backend service for the "Six Cities" project. The main features includ
 ## Project Structure
 
 - **`src`** - Backend services (Node.js, TypeScript)
-- **`markup`** - Frontend reference - provided for API design guidance
 - **`shared`** - Shared libraries and utilities
 - **`mocks`** - Mock data and server configuration
 
@@ -32,6 +31,25 @@ The project uses a modular architecture where each service handles a specific do
 - **File Services** - File upload and management
 - **Authentication** - JWT-based user authentication
 
+### Security Features
+
+The application includes comprehensive security measures to protect against common web vulnerabilities:
+
+- **Rate Limiting** - Multi-tier rate limiting system with different limits for different endpoint types:
+  - Public endpoints: 100 requests/minute per IP
+  - Authentication endpoints: 5 requests/minute per IP (prevents brute force attacks)
+  - File upload endpoints: 10 requests/minute per IP
+  - User API endpoints: 1000 requests/minute per authenticated user
+- **Security Headers** - Helmet.js integration providing:
+  - X-Frame-Options (clickjacking protection)
+  - X-Content-Type-Options (MIME type sniffing protection)
+  - X-XSS-Protection (XSS protection)
+  - Content-Security-Policy (CSP)
+- **CORS Protection** - Configurable cross-origin resource sharing with production/development modes
+- **Request Size Limits** - Protection against large payload attacks (10MB limit)
+- **Input Validation** - Comprehensive request validation using class-validator
+- **Authentication Middleware** - JWT token validation and private route protection
+
 ### Technology Stack
 
 - **Backend Framework**: Node.js with Express
@@ -39,7 +57,8 @@ The project uses a modular architecture where each service handles a specific do
 - **Database**: MongoDB
 - **Authentication**: JWT-based
 - **File Handling**: Multer for uploads
-- **Validation**: Joi for request validation
+- **Validation**: class-validator for request validation
+- **Security**: Helmet.js, express-rate-limit
 - **Documentation**: Swagger/OpenAPI
 - **Testing**: Jest
 
@@ -80,5 +99,62 @@ The project uses a modular architecture where each service handles a specific do
 - Comprehensive error handling and validation
 - CLI tools for data generation and management
 - Full frontend integration provided for reference
+
+### Security Improvements
+
+The application has been enhanced with modern security practices to address common web vulnerabilities:
+
+#### **Vulnerabilities Addressed**
+
+- **DDoS Attacks** - Rate limiting prevents resource exhaustion and abuse
+- **Brute Force Attacks** - Low rate limits on authentication endpoints
+- **Clickjacking** - X-Frame-Options header protection
+- **XSS Attacks** - Security headers and input validation
+- **CSRF Attacks** - CORS configuration and token validation
+- **File Upload Abuse** - Rate limiting and size restrictions
+- **Information Disclosure** - Security headers prevent sensitive data leakage
+
+#### **Security Architecture**
+
+- **Defense in Depth** - Multiple layers of security controls
+- **Zero Trust** - All requests are validated and rate-limited
+- **Secure by Default** - Security features enabled out of the box
+- **Configurable Security** - Environment-based security settings
+- **Monitoring Ready** - Rate limit headers for observability
+
+#### **Compliance & Standards**
+
+- **OWASP Top 10** - Addresses major web application security risks
+- **Modern Web Standards** - Implements current security best practices
+- **Production Ready** - Enterprise-grade security features
+
+### Configuration & Environment
+
+The application supports environment-based configuration for security and deployment settings:
+
+```bash
+# Rate Limiting Configuration
+RATE_LIMIT_WINDOW_MS=60000        # Time window in milliseconds
+RATE_LIMIT_MAX_PUBLIC=100         # Public endpoint limit
+RATE_LIMIT_MAX_AUTH=5             # Authentication endpoint limit
+RATE_LIMIT_MAX_UPLOAD=10          # File upload limit
+RATE_LIMIT_MAX_USER_API=1000      # User API limit
+
+# Security Configuration
+NODE_ENV=development              # Environment mode
+HOST=localhost                    # Server host
+PORT=4000                        # Server port
+JWT_SECRET=your-secret-key       # JWT signing secret
+SALT=your-salt-value             # Password hashing salt
+MAX_REQUEST_SIZE=10mb             # Maximum request body size
+```
+
+### Getting Started
+
+1. **Clone the repository**
+2. **Install dependencies**: `npm install`
+3. **Configure environment variables** (see above)
+4. **Start development server**: `npm run start:dev`
+5. **Build for production**: `npm run build`
 
 The repository was created for learning on the professional online course [Node.js. REST API Design](https://htmlacademy.ru/profession/fullstack) from [HTML Academy](https://htmlacademy.ru).
