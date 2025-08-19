@@ -25,5 +25,44 @@ services:
       ME_CONFIG_BASICAUTH_USERNAME: ${DB_USER:-admin}
       ME_CONFIG_BASICAUTH_PASSWORD: ${DB_PASSWORD:-test}
 
+  redis:
+    image: redis:7-alpine
+    container_name: six-cities_redis
+    restart: always
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    # Only pass --requirepass if REDIS_PASSWORD is set
+    command: >
+      sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+               exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD";
+             else
+               exec redis-server --appendonly yes;
+             fi'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    volumes:
+      - six-cities_redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '$$REDIS_PASSWORD', 'PING']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis_ui:
+    image: rediscommander/redis-commander:latest
+    container_name: six-cities_redis_ui
+    restart: always
+    ports:
+      - '8082:8081'
+    environment:
+      # name:host:port:db:password
+      REDIS_HOSTS: 'local:redis:6379:${REDIS_DB:-0}:${REDIS_PASSWORD:-}'
+      HTTP_USER: ${HTTP_USER:-admin}
+      HTTP_PASSWORD: ${HTTP_PASSWORD:-test}
+    depends_on:
+      redis:
+        condition: service_healthy
+
 volumes:
   six-cities_data:
+  six-cities_redis_data:

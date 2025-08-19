@@ -49,6 +49,7 @@ The application includes comprehensive security measures to protect against comm
 - **Request Size Limits** - Protection against large payload attacks (10MB limit)
 - **Input Validation** - Comprehensive request validation using class-validator
 - **Authentication Middleware** - JWT token validation and private route protection
+- **Caching System** - Redis-based distributed caching with TTL management (Redis required; no in-memory fallback)
 
 ### Technology Stack
 
@@ -59,6 +60,7 @@ The application includes comprehensive security measures to protect against comm
 - **File Handling**: Multer for uploads
 - **Validation**: class-validator for request validation
 - **Security**: Helmet.js, express-rate-limit
+- **Caching**: Redis (required)
 - **Documentation**: Swagger/OpenAPI
 - **Testing**: Jest
 
@@ -140,6 +142,12 @@ RATE_LIMIT_MAX_AUTH=5             # Authentication endpoint limit
 RATE_LIMIT_MAX_UPLOAD=10          # File upload limit
 RATE_LIMIT_MAX_USER_API=1000      # User API limit
 
+# Redis Configuration
+REDIS_HOST=localhost              # Redis server host
+REDIS_PORT=6379                   # Redis server port
+REDIS_PASSWORD=                   # Redis server password (optional)
+REDIS_DB=0                        # Redis database number
+
 # Security Configuration
 NODE_ENV=development              # Environment mode
 HOST=localhost                    # Server host
@@ -151,10 +159,28 @@ MAX_REQUEST_SIZE=10mb             # Maximum request body size
 
 ### Getting Started
 
+#### Development Setup
+
 1. **Clone the repository**
 2. **Install dependencies**: `npm install`
 3. **Configure environment variables** (see above)
-4. **Start development server**: `npm run start:dev`
-5. **Build for production**: `npm run build`
+4. **Start services with Docker Compose**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+5. **Start development server**: `npm run start:dev`
+6. **Build for production**: `npm run build`
+
+#### Services Available
+
+- **MongoDB**: `localhost:27017` (Database)
+- **Mongo Express**: `localhost:8081` (Database UI)
+- **Redis**: `localhost:6379` (Cache)
+- **Redis Commander**: `localhost:8082` (Cache UI)
+- **API Server**: `localhost:4000` (REST API)
+
+#### Environment Setup
+
+Create a `.env` file in the root directory with the configuration variables listed above, or use the default values provided in the configuration schema.
 
 The repository was created for learning on the professional online course [Node.js. REST API Design](https://htmlacademy.ru/profession/fullstack) from [HTML Academy](https://htmlacademy.ru).

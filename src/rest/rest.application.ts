@@ -3,6 +3,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { Config, RestSchema } from '../../shared/libs/config/index.js';
+import { RedisClient } from '../../shared/libs/cache/index.js';
 import { Logger } from '../../shared/libs/logger/index.js';
 import { Component } from '../../shared/types/index.js';
 import { DatabaseClient } from '../../shared/libs/database-client/index.js';
@@ -38,7 +39,9 @@ export class RestApplication {
     @inject(Component.HttpExceptionFilter)
     private readonly httpExceptionFilter: ExceptionFilter,
     @inject(Component.ValidationExceptionFilter)
-    private readonly validationExceptionFilter: ExceptionFilter
+    private readonly validationExceptionFilter: ExceptionFilter,
+    @inject(Component.RedisClient)
+    private readonly redisClient: RedisClient
   ) {
     this.server = express();
   }
@@ -58,6 +61,14 @@ export class RestApplication {
   private async _initServer() {
     const port = this.config.get('PORT');
     this.server.listen(port);
+  }
+
+  private async _initCache() {
+    try {
+      await this.redisClient.connect();
+    } catch (error) {
+      this.logger.error('Failed to initialize Redis client:', error as Error);
+    }
   }
 
   private async _initControllers() {
@@ -140,6 +151,10 @@ export class RestApplication {
     this.logger.info('Init database…');
     await this._initDb();
     this.logger.info('Init database completed');
+
+    this.logger.info('Init cache…');
+    await this._initCache();
+    this.logger.info('Cache initialization completed');
 
     this.logger.info('Init app-level middleware');
     await this._initMiddleware();

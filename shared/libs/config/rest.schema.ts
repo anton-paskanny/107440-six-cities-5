@@ -22,6 +22,11 @@ export type RestSchema = {
   RATE_LIMIT_MAX_AUTH: number;
   RATE_LIMIT_MAX_UPLOAD: number;
   RATE_LIMIT_MAX_USER_API: number;
+  // Redis configuration
+  REDIS_HOST: string;
+  REDIS_PORT: number;
+  REDIS_PASSWORD: string | null;
+  REDIS_DB: number;
 };
 
 export const configRestSchema = convict<RestSchema>({
@@ -121,6 +126,31 @@ export const configRestSchema = convict<RestSchema>({
     format: Number,
     env: 'RATE_LIMIT_MAX_USER_API',
     default: 1000
+  },
+  // Redis configuration
+  REDIS_HOST: {
+    doc: 'Redis server host',
+    format: String,
+    env: 'REDIS_HOST',
+    default: 'localhost'
+  },
+  REDIS_PORT: {
+    doc: 'Redis server port',
+    format: Number,
+    env: 'REDIS_PORT',
+    default: 6379
+  },
+  REDIS_PASSWORD: {
+    doc: 'Redis server password',
+    format: String,
+    env: 'REDIS_PASSWORD',
+    default: null
+  },
+  REDIS_DB: {
+    doc: 'Redis database number',
+    format: Number,
+    env: 'REDIS_DB',
+    default: 0
   },
   MAX_REQUEST_SIZE: {
     doc: 'Maximum request size in bytes',

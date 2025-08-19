@@ -12,12 +12,20 @@ import {
   MongoDatabaseClient
 } from '../../shared/libs/database-client/index.js';
 import {
+  RedisClient,
+  DefaultRedisClient
+} from '../../shared/libs/cache/index.js';
+import {
   AppExceptionFilter,
   ExceptionFilter,
   ValidationExceptionFilter,
   HttpErrorExceptionFilter
 } from '../../shared/libs/rest/index.js';
 import { PathTransformer } from '../../shared/libs/rest/transform/path.transformer.js';
+import {
+  CacheService,
+  DefaultCacheService
+} from '../../shared/libs/cache/index.js';
 
 export function createRestApplicationContainer() {
   const restApplicationContainer = new Container();
@@ -53,6 +61,18 @@ export function createRestApplicationContainer() {
   restApplicationContainer
     .bind<PathTransformer>(Component.PathTransformer)
     .to(PathTransformer)
+    .inSingletonScope();
+
+  // Bind Redis client for caching
+  restApplicationContainer
+    .bind<RedisClient>(Component.RedisClient)
+    .to(DefaultRedisClient)
+    .inSingletonScope();
+
+  // Bind Cache service as singleton (reusable across modules)
+  restApplicationContainer
+    .bind<CacheService>(Component.CacheService)
+    .to(DefaultCacheService)
     .inSingletonScope();
 
   return restApplicationContainer;
