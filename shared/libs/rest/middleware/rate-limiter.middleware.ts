@@ -47,7 +47,19 @@ const RATE_LIMITS = {
     legacyHeaders: false,
     skipSuccessfulRequests: false,
     skipFailedRequests: false,
-    keyGenerator: (req: Request) => req.tokenPayload?.id || req.ip
+    keyGenerator: (req: Request) => {
+      if (req.tokenPayload?.id) {
+        return req.tokenPayload.id;
+      }
+      // Fallback to IPv6-safe IP key generator per express-rate-limit guidance
+      const ipGen = (
+        rateLimit as unknown as {
+          ipKeyGenerator: (r: Request) => string;
+        }
+      ).ipKeyGenerator;
+
+      return ipGen(req);
+    }
   }
 };
 
