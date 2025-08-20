@@ -29,6 +29,7 @@ export type RestSchema = {
   REDIS_DB: number;
   // Cache configuration
   CACHE_TTL_CITIES: number;
+  CACHE_TTL_USERS: number;
 };
 
 export const configRestSchema = convict<RestSchema>({
@@ -160,6 +161,12 @@ export const configRestSchema = convict<RestSchema>({
     format: Number,
     env: 'CACHE_TTL_CITIES',
     default: 3600
+  },
+  CACHE_TTL_USERS: {
+    doc: 'Cache TTL for users in seconds',
+    format: Number,
+    env: 'CACHE_TTL_USERS',
+    default: 7200
   },
   MAX_REQUEST_SIZE: {
     doc: 'Maximum request size in bytes',

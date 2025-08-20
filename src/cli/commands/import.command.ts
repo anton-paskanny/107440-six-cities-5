@@ -55,7 +55,12 @@ export class ImportCommand implements Command {
       new MockCacheService(),
       new MockConfig()
     );
-    this.userService = new DefaultUserService(this.logger, UserModel);
+    this.userService = new DefaultUserService(
+      this.logger,
+      UserModel,
+      new MockCacheService(),
+      new MockConfig()
+    );
     this.databaseClient = new MongoDatabaseClient(this.logger);
   }
 
