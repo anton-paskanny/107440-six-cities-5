@@ -28,6 +28,8 @@ import {
 } from '../../../shared/modules/user/index.js';
 import { DEFAULT_DB_PORT, DEFAULT_USER_PASSWORD } from './command.constants.js';
 import { FeatureType, RentOffer } from '../../../shared/types/index.js';
+import { MockCacheService } from '../../../shared/libs/cache/index.js';
+import { MockConfig } from '../../../shared/libs/config/index.js';
 
 export class ImportCommand implements Command {
   private userService: UserService;
@@ -47,7 +49,12 @@ export class ImportCommand implements Command {
       RentOfferModel,
       CityModel
     );
-    this.cityService = new DefaultCityService(this.logger, CityModel);
+    this.cityService = new DefaultCityService(
+      this.logger,
+      CityModel,
+      new MockCacheService(),
+      new MockConfig()
+    );
     this.userService = new DefaultUserService(this.logger, UserModel);
     this.databaseClient = new MongoDatabaseClient(this.logger);
   }
