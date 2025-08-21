@@ -2,6 +2,8 @@ import { inject, injectable } from 'inversify';
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
+import { createHttpLogger } from '../../shared/libs/logger/index.js';
 import { Config, RestSchema } from '../../shared/libs/config/index.js';
 import { RedisClient } from '../../shared/libs/cache/index.js';
 import { Logger } from '../../shared/libs/logger/index.js';
@@ -91,6 +93,10 @@ export class RestApplication {
     const rateLimiter = new RateLimiterMiddleware(this.config);
     this.server.use(rateLimiter.execute.bind(rateLimiter));
 
+    // HTTP request logging with request IDs
+    const httpLogger = createHttpLogger();
+    this.server.use(httpLogger);
+
     // Apply request size limits
     this.server.use(
       express.json({ limit: this.config.get('MAX_REQUEST_SIZE') })
@@ -101,6 +107,9 @@ export class RestApplication {
         limit: this.config.get('MAX_REQUEST_SIZE')
       })
     );
+
+    // Enable gzip/br compression
+    this.server.use(compression());
     this.server.use(
       STATIC_UPLOAD_ROUTE,
       express.static(this.config.get('UPLOAD_DIRECTORY'))
