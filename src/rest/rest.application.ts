@@ -2,7 +2,6 @@ import { inject, injectable } from 'inversify';
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import compression from 'compression';
 import { createHttpLogger } from '../../shared/libs/logger/index.js';
 import { Config, RestSchema } from '../../shared/libs/config/index.js';
 import { RedisClient } from '../../shared/libs/cache/index.js';
@@ -13,6 +12,7 @@ import { getMongoURI, getFullServerPath } from '../../shared/helpers/index.js';
 import { Controller, ExceptionFilter } from '../../shared/libs/rest/index.js';
 import { ParseTokenMiddleware } from '../../shared/libs/rest/middleware/parse-token.middleware.js';
 import { RateLimiterMiddleware } from '../../shared/libs/rest/middleware/rate-limiter.middleware.js';
+import { CompressionMiddleware } from '../../shared/libs/rest/middleware/compression.middleware.js';
 import { STATIC_FILES_ROUTE, STATIC_UPLOAD_ROUTE } from './rest.constants.js';
 
 @injectable()
@@ -108,8 +108,9 @@ export class RestApplication {
       })
     );
 
-    // Enable gzip/br compression
-    this.server.use(compression());
+    // Compression middleware
+    const compressionMiddleware = new CompressionMiddleware();
+    this.server.use(compressionMiddleware.execute.bind(compressionMiddleware));
     this.server.use(
       STATIC_UPLOAD_ROUTE,
       express.static(this.config.get('UPLOAD_DIRECTORY'))
