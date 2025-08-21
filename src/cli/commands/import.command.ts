@@ -26,7 +26,8 @@ import { Logger } from '../../../shared/libs/logger/index.js';
 import { ConsoleLogger } from '../../../shared/libs/logger/console.logger.js';
 import {
   DefaultUserService,
-  UserModel
+  UserModel,
+  UserCacheService
 } from '../../../shared/modules/user/index.js';
 import { DEFAULT_DB_PORT, DEFAULT_USER_PASSWORD } from './command.constants.js';
 import { FeatureType, RentOffer } from '../../../shared/types/index.js';
@@ -69,7 +70,12 @@ export class ImportCommand implements Command {
       this.logger,
       UserModel,
       new MockCacheService(),
-      new MockConfig()
+      new MockConfig(),
+      new UserCacheService(
+        this.logger,
+        new MockCacheService(),
+        new MockConfig()
+      )
     );
     this.databaseClient = new MongoDatabaseClient(this.logger);
   }
