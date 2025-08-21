@@ -9,7 +9,8 @@ import { UserService } from '../../../shared/modules/user/user.service.interface
 import {
   CityModel,
   CityService,
-  DefaultCityService
+  DefaultCityService,
+  CityCacheService
 } from '../../../shared/modules/city/index.js';
 import {
   DefaultRentOfferService,
@@ -58,8 +59,11 @@ export class ImportCommand implements Command {
     this.cityService = new DefaultCityService(
       this.logger,
       CityModel,
-      new MockCacheService(),
-      new MockConfig()
+      new CityCacheService(
+        this.logger,
+        new MockCacheService(),
+        new MockConfig()
+      )
     );
     this.userService = new DefaultUserService(
       this.logger,

@@ -26,5 +26,6 @@ export const Component = {
   PathTransformer: Symbol.for('PathTransformer'),
   RedisClient: Symbol.for('RedisClient'),
   CacheService: Symbol.for('CacheService'),
-  RentOfferCacheService: Symbol.for('RentOfferCacheService')
+  RentOfferCacheService: Symbol.for('RentOfferCacheService'),
+  CityCacheService: Symbol.for('CityCacheService')
 } as const;

@@ -6,9 +6,15 @@ import { CityController } from './city.controller.js';
 import { CityService } from './city.service.interface.js';
 import { DefaultCityService } from './city.service.js';
 import { CityEntity, CityModel } from './city.entity.js';
+import { CityCacheService } from './city-cache.service.js';
 
 export function createCityContainer() {
   const cityContainer = new Container();
+
+  cityContainer
+    .bind<CityCacheService>(Component.CityCacheService)
+    .to(CityCacheService)
+    .inSingletonScope();
 
   cityContainer.bind<CityService>(Component.CityService).to(DefaultCityService);
   cityContainer
