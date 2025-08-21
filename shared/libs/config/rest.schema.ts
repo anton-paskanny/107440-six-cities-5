@@ -29,6 +29,7 @@ export type RestSchema = {
   REDIS_DB: number;
   // Cache configuration
   CACHE_TTL_CITIES: number;
+  CACHE_TTL_RENT_OFFERS: number;
   CACHE_TTL_USERS: number;
 };
 
@@ -167,6 +168,12 @@ export const configRestSchema = convict<RestSchema>({
     format: Number,
     env: 'CACHE_TTL_USERS',
     default: 7200
+  },
+  CACHE_TTL_RENT_OFFERS: {
+    doc: 'Cache TTL for rent offers in seconds',
+    format: Number,
+    env: 'CACHE_TTL_RENT_OFFERS',
+    default: 1800
   },
   MAX_REQUEST_SIZE: {
     doc: 'Maximum request size in bytes',

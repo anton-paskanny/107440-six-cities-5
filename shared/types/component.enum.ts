@@ -25,5 +25,6 @@ export const Component = {
   ValidationExceptionFilter: Symbol.for('ValidationExceptionFilter'),
   PathTransformer: Symbol.for('PathTransformer'),
   RedisClient: Symbol.for('RedisClient'),
-  CacheService: Symbol.for('CacheService')
+  CacheService: Symbol.for('CacheService'),
+  RentOfferCacheService: Symbol.for('RentOfferCacheService')
 } as const;

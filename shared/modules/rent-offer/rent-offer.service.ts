@@ -10,6 +10,7 @@ import { DEFAULT_OFFER_COUNT } from './rent-offer.constants.js';
 import { CityEntity } from '../city/city.entity.js';
 import { HttpError } from '../../libs/rest/index.js';
 import { StatusCodes } from 'http-status-codes';
+import { RentOfferCacheService } from './rent-offer-cache.service.js';
 
 @injectable()
 export class DefaultRentOfferService implements RentOfferService {
@@ -18,7 +19,9 @@ export class DefaultRentOfferService implements RentOfferService {
     @inject(Component.RentOfferModel)
     private readonly rentOfferModel: types.ModelType<RentOfferEntity>,
     @inject(Component.CityModel)
-    private readonly cityModel: types.ModelType<CityEntity>
+    private readonly cityModel: types.ModelType<CityEntity>,
+    @inject(Component.RentOfferCacheService)
+    private readonly cacheService: RentOfferCacheService
   ) {}
 
   public async create(
@@ -39,31 +42,77 @@ export class DefaultRentOfferService implements RentOfferService {
     const result = await this.rentOfferModel.create(dto);
     this.logger.info(`New rent offer created: ${dto.title}`);
 
+    // Invalidate relevant caches
+    await this.cacheService.invalidateOfferCaches(dto.cityId);
+    await this.cacheService.invalidateListCaches();
+
     return result;
   }
 
   public async find(count?: number): Promise<DocumentType<RentOfferEntity>[]> {
     const limit = count ?? DEFAULT_OFFER_COUNT;
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getListCacheKey(limit);
+
+    const cachedOffers =
+      await this.cacheService.get<DocumentType<RentOfferEntity>[]>(cacheKey);
+
+    if (cachedOffers) {
+      this.cacheService.logCacheHit('Rent offers list', `${limit} offers`);
+      return cachedOffers;
+    }
+
+    const offers = await this.rentOfferModel
       .find()
       .sort({ createdAt: SortType.Down })
       .populate(['userId', 'cityId'])
       .limit(limit)
       .exec();
+
+    // Cache the result
+    await this.cacheService.set(cacheKey, offers);
+    this.cacheService.logCacheStorage('Rent offers list', `${limit} offers`);
+
+    return offers;
   }
 
   public async findById(
     rentOfferId: string
   ): Promise<DocumentType<RentOfferEntity> | null> {
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getIndividualCacheKey(rentOfferId);
+
+    const cachedOffer =
+      await this.cacheService.get<DocumentType<RentOfferEntity>>(cacheKey);
+
+    if (cachedOffer) {
+      this.cacheService.logCacheHit('Rent offer', rentOfferId);
+      return cachedOffer;
+    }
+
+    const offer = await this.rentOfferModel
       .findById(rentOfferId)
       .populate(['userId', 'cityId'])
       .exec();
+
+    if (offer) {
+      await this.cacheService.set(cacheKey, offer.toObject());
+      this.cacheService.logCacheStorage('Rent offer', rentOfferId);
+    }
+
+    return offer;
   }
 
   public async deleteById(
     rentOfferId: string
   ): Promise<DocumentType<RentOfferEntity> | null> {
+    const offer = await this.rentOfferModel.findById(rentOfferId).exec();
+
+    if (offer) {
+      // Invalidate relevant caches before deletion
+      await this.cacheService.invalidateOfferCaches(offer.cityId.toString());
+      await this.cacheService.invalidateListCaches();
+      await this.cacheService.invalidateIndividualOffer(rentOfferId);
+    }
+
     return this.rentOfferModel.findByIdAndDelete(rentOfferId).exec();
   }
 
@@ -85,10 +134,19 @@ export class DefaultRentOfferService implements RentOfferService {
       }
     }
 
-    return this.rentOfferModel
+    const result = await this.rentOfferModel
       .findByIdAndUpdate(rentOfferId, dto, { new: true })
       .populate(['userId', 'cityId'])
       .exec();
+
+    if (result) {
+      // Invalidate relevant caches
+      await this.cacheService.invalidateOfferCaches(result.cityId.toString());
+      await this.cacheService.invalidateListCaches();
+      await this.cacheService.invalidateIndividualOffer(rentOfferId);
+    }
+
+    return result;
   }
 
   public async findByCityId(
@@ -96,11 +154,26 @@ export class DefaultRentOfferService implements RentOfferService {
     count?: number
   ): Promise<DocumentType<RentOfferEntity>[]> {
     const limit = count ?? DEFAULT_OFFER_COUNT;
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getCityCacheKey(cityId, limit);
+
+    const cachedOffers =
+      await this.cacheService.get<DocumentType<RentOfferEntity>[]>(cacheKey);
+
+    if (cachedOffers) {
+      this.cacheService.logCacheHit('City offers', `${cityId} (${limit})`);
+      return cachedOffers;
+    }
+
+    const offers = await this.rentOfferModel
       .find({ cityId: cityId }, {}, { limit })
       .sort({ createdAt: SortType.Down })
       .populate(['userId', 'cityId'])
       .exec();
+
+    await this.cacheService.set(cacheKey, offers);
+    this.cacheService.logCacheStorage('City offers', `${cityId} (${limit})`);
+
+    return offers;
   }
 
   public async findPremiumByCityId(
@@ -108,11 +181,26 @@ export class DefaultRentOfferService implements RentOfferService {
     count?: number
   ): Promise<DocumentType<RentOfferEntity>[]> {
     const limit = count ?? DEFAULT_OFFER_COUNT;
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getPremiumCacheKey(cityId, limit);
+
+    const cachedOffers =
+      await this.cacheService.get<DocumentType<RentOfferEntity>[]>(cacheKey);
+
+    if (cachedOffers) {
+      this.cacheService.logCacheHit('Premium offers', `${cityId} (${limit})`);
+      return cachedOffers;
+    }
+
+    const offers = await this.rentOfferModel
       .find({ cityId: cityId, isPremium: true }, {}, { limit })
       .sort({ createdAt: SortType.Down })
       .populate(['cityId'])
       .exec();
+
+    await this.cacheService.set(cacheKey, offers);
+    this.cacheService.logCacheStorage('Premium offers', `${cityId} (${limit})`);
+
+    return offers;
   }
 
   public async exists(documentId: string): Promise<boolean> {
@@ -122,34 +210,72 @@ export class DefaultRentOfferService implements RentOfferService {
   public async incCommentCount(
     rentOfferId: string
   ): Promise<DocumentType<RentOfferEntity> | null> {
-    return this.rentOfferModel
+    const result = await this.rentOfferModel
       .findByIdAndUpdate(rentOfferId, {
         $inc: {
           commentCount: 1
         }
       })
       .exec();
+
+    if (result) {
+      // Invalidate caches that depend on comment count
+      await this.cacheService.invalidateListCaches();
+      await this.cacheService.invalidateIndividualOffer(rentOfferId);
+    }
+
+    return result;
   }
 
   public async findNew(
     count: number
   ): Promise<DocumentType<RentOfferEntity>[]> {
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getNewCacheKey(count);
+
+    const cachedOffers =
+      await this.cacheService.get<DocumentType<RentOfferEntity>[]>(cacheKey);
+
+    if (cachedOffers) {
+      this.cacheService.logCacheHit('New offers', `${count} offers`);
+      return cachedOffers;
+    }
+
+    const offers = await this.rentOfferModel
       .find()
       .sort({ createdAt: SortType.Down })
       .limit(count)
       .populate(['userId', 'cityId'])
       .exec();
+
+    await this.cacheService.set(cacheKey, offers);
+    this.cacheService.logCacheStorage('New offers', `${count} offers`);
+
+    return offers;
   }
 
   public async findDiscussed(
     count: number
   ): Promise<DocumentType<RentOfferEntity>[]> {
-    return this.rentOfferModel
+    const cacheKey = this.cacheService.getDiscussedCacheKey(count);
+
+    const cachedOffers =
+      await this.cacheService.get<DocumentType<RentOfferEntity>[]>(cacheKey);
+
+    if (cachedOffers) {
+      this.cacheService.logCacheHit('Discussed offers', `${count} offers`);
+      return cachedOffers;
+    }
+
+    const offers = await this.rentOfferModel
       .find()
       .sort({ commentCount: SortType.Down })
       .limit(count)
       .populate(['userId', 'cityId'])
       .exec();
+
+    await this.cacheService.set(cacheKey, offers);
+    this.cacheService.logCacheStorage('Discussed offers', `${count} offers`);
+
+    return offers;
   }
 }

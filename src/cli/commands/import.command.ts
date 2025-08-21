@@ -14,7 +14,8 @@ import {
 import {
   DefaultRentOfferService,
   RentOfferModel,
-  RentOfferService
+  RentOfferService,
+  RentOfferCacheService
 } from '../../../shared/modules/rent-offer/index.js';
 import {
   DatabaseClient,
@@ -47,7 +48,12 @@ export class ImportCommand implements Command {
     this.rentOfferService = new DefaultRentOfferService(
       this.logger,
       RentOfferModel,
-      CityModel
+      CityModel,
+      new RentOfferCacheService(
+        this.logger,
+        new MockCacheService(),
+        new MockConfig()
+      )
     );
     this.cityService = new DefaultCityService(
       this.logger,
