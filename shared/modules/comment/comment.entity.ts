@@ -3,7 +3,8 @@ import {
   getModelForClass,
   modelOptions,
   prop,
-  Ref
+  Ref,
+  index
 } from '@typegoose/typegoose';
 import { RentOfferEntity } from '../rent-offer/index.js';
 import { UserEntity } from '../user/index.js';
@@ -16,6 +17,7 @@ export interface CommentEntity extends defaultClasses.Base {}
     collection: 'comments'
   }
 })
+@index({ rentOfferId: 1, createdAt: -1 })
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class CommentEntity extends defaultClasses.TimeStamps {
   @prop({

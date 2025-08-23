@@ -3,7 +3,8 @@ import {
   getModelForClass,
   prop,
   modelOptions,
-  Ref
+  Ref,
+  index
 } from '@typegoose/typegoose';
 import { UserEntity } from '../user/user.entity.js';
 import { RentOfferEntity } from '../rent-offer/index.js';
@@ -17,6 +18,7 @@ export interface FavoriteEntity extends defaultClasses.Base {}
     timestamps: true
   }
 })
+@index({ userId: 1 })
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class FavoriteEntity extends defaultClasses.TimeStamps {
   @prop({

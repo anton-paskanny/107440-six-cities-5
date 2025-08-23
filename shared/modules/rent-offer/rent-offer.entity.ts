@@ -3,7 +3,8 @@ import {
   getModelForClass,
   modelOptions,
   prop,
-  Ref
+  Ref,
+  index
 } from '@typegoose/typegoose';
 import { HouseType, FeatureType } from '../../types/index.js';
 import { UserEntity } from '../user/index.js';
@@ -17,7 +18,12 @@ export interface RentOfferEntity extends defaultClasses.Base {}
     collection: 'rentOffers'
   }
 })
-
+// Add indexes at class level
+@index({ cityId: 1, createdAt: -1 })
+@index({ cityId: 1, isPremium: 1, createdAt: -1 })
+@index({ createdAt: -1 })
+@index({ commentCount: -1 })
+@index({ userId: 1 })
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class RentOfferEntity extends defaultClasses.TimeStamps {
   @prop({ trim: true, required: true })
