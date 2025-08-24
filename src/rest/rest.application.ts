@@ -90,7 +90,10 @@ export class RestApplication {
     this.server.use(helmet());
 
     // Apply rate limiting early in the middleware chain (single instance)
-    const rateLimiter = new RateLimiterMiddleware(this.config);
+    const rateLimiter = new RateLimiterMiddleware(
+      this.config,
+      this.redisClient
+    );
     this.server.use(rateLimiter.execute.bind(rateLimiter));
 
     // HTTP request logging with request IDs

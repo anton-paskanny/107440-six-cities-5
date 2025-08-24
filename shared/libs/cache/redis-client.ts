@@ -142,4 +142,8 @@ export class DefaultRedisClient implements RedisClient {
   public isConnected(): boolean {
     return this.isConnectedFlag;
   }
+
+  public getRedisInstance(): Redis | null {
+    return this.redis;
+  }
 }

@@ -35,7 +35,7 @@ The project uses a modular architecture where each service handles a specific do
 
 The application includes comprehensive security measures to protect against common web vulnerabilities:
 
-- **Rate Limiting** - Multi-tier rate limiting system with different limits for different endpoint types:
+- **Rate Limiting** - Redis-based rate limiting system with different limits for different endpoint types:
   - Public endpoints: 100 requests/minute per IP
   - Authentication endpoints: 5 requests/minute per IP (prevents brute force attacks)
   - File upload endpoints: 10 requests/minute per IP
@@ -50,6 +50,26 @@ The application includes comprehensive security measures to protect against comm
 - **Input Validation** - Comprehensive request validation using class-validator
 - **Authentication Middleware** - JWT token validation and private route protection
 - **Caching System** - Redis-based distributed caching with TTL management (Redis required; no in-memory fallback)
+
+### Rate Limiting Implementation
+
+The application implements a Redis-based rate limiting system that provides enterprise-grade protection against abuse and DDoS attacks.
+
+#### **Architecture Overview**
+
+- **Redis Storage**: All rate limiting data is stored in Redis, ensuring persistence across application restarts
+- **Shared Infrastructure**: Leverages existing Redis instance used for caching, providing efficient resource utilization
+- **Multi-Tier Protection**: Different rate limits for different endpoint types based on security requirements
+- **User-Aware Limiting**: Authenticated users get higher limits while maintaining security
+
+#### **Rate Limiting Tiers**
+
+| Endpoint Type      | Rate Limit   | Purpose                      | Security Benefit                 |
+| ------------------ | ------------ | ---------------------------- | -------------------------------- |
+| **Public APIs**    | 100 req/min  | General API access           | Prevents API abuse               |
+| **Authentication** | 5 req/min    | Login/signup endpoints       | Prevents brute force attacks     |
+| **File Uploads**   | 10 req/min   | Image and file uploads       | Prevents storage abuse           |
+| **User APIs**      | 1000 req/min | Authenticated user endpoints | High limits for legitimate users |
 
 ### Technology Stack
 
@@ -175,7 +195,7 @@ MAX_REQUEST_SIZE=10mb             # Maximum request body size
 
 - **MongoDB**: `localhost:27017` (Database)
 - **Mongo Express**: `localhost:8081` (Database UI)
-- **Redis**: `localhost:6379` (Cache)
+- **Redis**: `localhost:6379` (Cache & Rate Limiting)
 - **Redis Commander**: `localhost:8082` (Cache UI)
 - **API Server**: `localhost:4000` (REST API)
 

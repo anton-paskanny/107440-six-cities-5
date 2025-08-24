@@ -1,3 +1,5 @@
+import type { Redis } from 'ioredis';
+
 export interface RedisClient {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
@@ -8,4 +10,5 @@ export interface RedisClient {
   expire(key: string, ttlSeconds: number): Promise<number>;
   flushdb(): Promise<void>;
   isConnected(): boolean;
+  getRedisInstance(): Redis | null; // Returns the underlying Redis instance for rate limiting
 }

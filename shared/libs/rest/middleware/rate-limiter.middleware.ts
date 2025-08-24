@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
+import RedisStore, { RedisReply } from 'rate-limit-redis';
 import { Middleware } from './middleware.interface.js';
 import { Config, RestSchema } from '../../config/index.js';
+import { RedisClient } from '../../cache/index.js';
 
 // Rate limit configurations for different endpoint types
 const RATE_LIMITS = {
@@ -64,48 +66,89 @@ const RATE_LIMITS = {
 };
 
 export class RateLimiterMiddleware implements Middleware {
-  private publicLimiter: ReturnType<typeof rateLimit>;
-  private authLimiter: ReturnType<typeof rateLimit>;
-  private uploadLimiter: ReturnType<typeof rateLimit>;
-  private userApiLimiter: ReturnType<typeof rateLimit>;
+  private publicLimiter: RateLimitRequestHandler | null = null;
+  private authLimiter: RateLimitRequestHandler | null = null;
+  private uploadLimiter: RateLimitRequestHandler | null = null;
+  private userApiLimiter: RateLimitRequestHandler | null = null;
+  private isInitialized = false;
 
-  constructor(private readonly config: Config<RestSchema>) {
+  constructor(
+    private readonly config: Config<RestSchema>,
+    private readonly redisClient?: RedisClient
+  ) {}
+
+  private initializeRateLimiters(): void {
+    if (this.isInitialized) {
+      return;
+    }
+
     const windowMs = this.config.get('RATE_LIMIT_WINDOW_MS');
+
+    // Use Redis store if available, otherwise fall back to in-memory
+    const storeConfig = this.redisClient?.isConnected()
+      ? {
+          store: new RedisStore({
+            sendCommand: (command: string, ...args: string[]) =>
+              this.redisClient!.getRedisInstance()!.call(
+                command,
+                ...args
+              ) as Promise<RedisReply>
+          })
+        }
+      : {};
 
     this.publicLimiter = rateLimit({
       ...RATE_LIMITS.PUBLIC,
       windowMs,
-      max: this.config.get('RATE_LIMIT_MAX_PUBLIC')
+      max: this.config.get('RATE_LIMIT_MAX_PUBLIC'),
+      ...storeConfig
     });
 
     this.authLimiter = rateLimit({
       ...RATE_LIMITS.AUTH,
       windowMs,
-      max: this.config.get('RATE_LIMIT_MAX_AUTH')
+      max: this.config.get('RATE_LIMIT_MAX_AUTH'),
+      ...storeConfig
     });
 
     this.uploadLimiter = rateLimit({
       ...RATE_LIMITS.UPLOAD,
       windowMs,
-      max: this.config.get('RATE_LIMIT_MAX_UPLOAD')
+      max: this.config.get('RATE_LIMIT_MAX_UPLOAD'),
+      ...storeConfig
     });
 
     this.userApiLimiter = rateLimit({
       ...RATE_LIMITS.USER_API,
       windowMs,
-      max: this.config.get('RATE_LIMIT_MAX_USER_API')
+      max: this.config.get('RATE_LIMIT_MAX_USER_API'),
+      ...storeConfig
     });
+
+    this.isInitialized = true;
   }
 
   public execute(req: Request, res: Response, next: NextFunction): void {
+    // Initialize rate limiters if not already done
+    if (!this.isInitialized) {
+      this.initializeRateLimiters();
+    }
+
     const path = req.path;
     const method = req.method;
 
     const limiter = this.getRateLimiter(path, method);
-    limiter(req, res, next);
+
+    if (limiter) return limiter(req, res, next);
+
+    return next();
   }
 
   private getRateLimiter(path: string, method: string) {
+    if (!this.isInitialized) {
+      return null;
+    }
+
     // Create a Map with endpoint patterns as keys and limiters as values
     const endpointLimiterMap = new Map([
       ['auth', this.authLimiter],
