@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { DocumentType } from '@typegoose/typegoose';
 import { describe, it, expect, vi } from 'vitest';
@@ -90,9 +90,115 @@ describe('CityController (integration-light)', () => {
     primeController(controller as unknown as Record<string, unknown>);
 
     app.use('/cities', controller.router);
+    app.use(
+      (
+        err: Error & { httpStatusCode?: number },
+        _req: Request,
+        res: Response,
+        _next: NextFunction
+      ) => {
+        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
+      }
+    );
 
     const res = await request(app).get('/cities').expect(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body[0].name).toBe('Amsterdam');
+  });
+
+  it('POST /cities without auth returns 401', async () => {
+    const app = express();
+    app.use(express.json());
+
+    const controller = new CityController(
+      new NoopLogger(),
+      stubCityService,
+      stubRentOfferService,
+      stubFavoriteService
+    );
+    primeController(controller as unknown as Record<string, unknown>);
+
+    app.use('/cities', controller.router);
+    app.use(
+      (
+        err: Error & { httpStatusCode?: number },
+        _req: Request,
+        res: Response,
+        _next: NextFunction
+      ) => {
+        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
+      }
+    );
+
+    await request(app)
+      .post('/cities')
+      .send({ name: 'Paris', latitude: 48.85, longitude: 2.35 })
+      .expect(401);
+  });
+
+  it('POST /cities with auth and valid body returns 201', async () => {
+    const app = express();
+    app.use(express.json());
+
+    // inject fake token payload to satisfy PrivateRouteMiddleware
+    app.use((req, _res, next) => {
+      (req as unknown as Record<string, unknown>).tokenPayload = { id: 'u1' };
+      next();
+    });
+
+    const controller = new CityController(
+      new NoopLogger(),
+      stubCityService,
+      stubRentOfferService,
+      stubFavoriteService
+    );
+    primeController(controller as unknown as Record<string, unknown>);
+
+    app.use('/cities', controller.router);
+    app.use(
+      (
+        err: Error & { httpStatusCode?: number },
+        _req: Request,
+        res: Response,
+        _next: NextFunction
+      ) => {
+        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
+      }
+    );
+
+    const res = await request(app)
+      .post('/cities')
+      .send({ name: 'Rotterdam', latitude: 51.92, longitude: 4.48 })
+      .expect(201);
+    expect(res.body.name).toBe('Rotterdam');
+  });
+
+  it('GET /cities/:cityId/rentOffers with non-existing id returns 404', async () => {
+    const app = express();
+    app.use(express.json());
+
+    const controller = new CityController(
+      new NoopLogger(),
+      stubCityService,
+      stubRentOfferService,
+      stubFavoriteService
+    );
+    primeController(controller as unknown as Record<string, unknown>);
+
+    app.use('/cities', controller.router);
+    app.use(
+      (
+        err: Error & { httpStatusCode?: number },
+        _req: Request,
+        res: Response,
+        _next: NextFunction
+      ) => {
+        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
+      }
+    );
+
+    await request(app)
+      .get('/cities/507f1f77bcf86cd799439011/rentOffers')
+      .expect(404);
   });
 });
