@@ -1,11 +1,15 @@
-import express, { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { DocumentType } from '@typegoose/typegoose';
 import { describe, it, expect, vi } from 'vitest';
-import { Logger } from '../../../libs/logger/index.js';
 import { CityController } from '../city.controller.js';
 import { RentOfferEntity } from '../../rent-offer/index.js';
 import { CityEntity, CreateCityDto } from '../index.js';
+import {
+  NoopLogger,
+  primeController,
+  createTestApp,
+  applyErrorHandler
+} from '../../../tests/integration-helpers.js';
 
 // Mock modules that import Typegoose models to avoid schema building side-effects
 vi.mock('../../favorite/index.js', () => ({
@@ -17,16 +21,6 @@ vi.mock('../../rent-offer/index.js', () => ({
   RentOfferRdo: class {},
   MAX_PREMIUM_OFFERS_COUNT: 3
 }));
-
-class NoopLogger implements Logger {
-  info(): void {}
-  warn(): void {}
-  error(): void {}
-  debug(): void {}
-  child(): Logger {
-    return this;
-  }
-}
 
 // Minimal stubs to satisfy controller dependencies
 const stubCityService = {
@@ -69,17 +63,9 @@ const stubFavoriteService = {
   isFavorite: async () => false
 };
 
-// Provide missing DI properties for BaseController
-function primeController(controller: Record<string, unknown>) {
-  (controller as Record<string, unknown>).pathTranformer = {
-    execute: (d: Record<string, unknown>) => d
-  };
-}
-
 describe('CityController (integration-light)', () => {
   it('GET /cities returns array', async () => {
-    const app = express();
-    app.use(express.json());
+    const app = createTestApp();
 
     const controller = new CityController(
       new NoopLogger(),
@@ -90,16 +76,7 @@ describe('CityController (integration-light)', () => {
     primeController(controller as unknown as Record<string, unknown>);
 
     app.use('/cities', controller.router);
-    app.use(
-      (
-        err: Error & { httpStatusCode?: number },
-        _req: Request,
-        res: Response,
-        _next: NextFunction
-      ) => {
-        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
-      }
-    );
+    applyErrorHandler(app);
 
     const res = await request(app).get('/cities').expect(200);
     expect(Array.isArray(res.body)).toBe(true);
@@ -107,8 +84,7 @@ describe('CityController (integration-light)', () => {
   });
 
   it('POST /cities without auth returns 401', async () => {
-    const app = express();
-    app.use(express.json());
+    const app = createTestApp();
 
     const controller = new CityController(
       new NoopLogger(),
@@ -119,16 +95,7 @@ describe('CityController (integration-light)', () => {
     primeController(controller as unknown as Record<string, unknown>);
 
     app.use('/cities', controller.router);
-    app.use(
-      (
-        err: Error & { httpStatusCode?: number },
-        _req: Request,
-        res: Response,
-        _next: NextFunction
-      ) => {
-        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
-      }
-    );
+    applyErrorHandler(app);
 
     await request(app)
       .post('/cities')
@@ -137,14 +104,7 @@ describe('CityController (integration-light)', () => {
   });
 
   it('POST /cities with auth and valid body returns 201', async () => {
-    const app = express();
-    app.use(express.json());
-
-    // inject fake token payload to satisfy PrivateRouteMiddleware
-    app.use((req, _res, next) => {
-      (req as unknown as Record<string, unknown>).tokenPayload = { id: 'u1' };
-      next();
-    });
+    const app = createTestApp({ tokenPayload: { id: 'u1' } });
 
     const controller = new CityController(
       new NoopLogger(),
@@ -155,16 +115,7 @@ describe('CityController (integration-light)', () => {
     primeController(controller as unknown as Record<string, unknown>);
 
     app.use('/cities', controller.router);
-    app.use(
-      (
-        err: Error & { httpStatusCode?: number },
-        _req: Request,
-        res: Response,
-        _next: NextFunction
-      ) => {
-        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
-      }
-    );
+    applyErrorHandler(app);
 
     const res = await request(app)
       .post('/cities')
@@ -174,8 +125,7 @@ describe('CityController (integration-light)', () => {
   });
 
   it('GET /cities/:cityId/rentOffers with non-existing id returns 404', async () => {
-    const app = express();
-    app.use(express.json());
+    const app = createTestApp();
 
     const controller = new CityController(
       new NoopLogger(),
@@ -186,16 +136,7 @@ describe('CityController (integration-light)', () => {
     primeController(controller as unknown as Record<string, unknown>);
 
     app.use('/cities', controller.router);
-    app.use(
-      (
-        err: Error & { httpStatusCode?: number },
-        _req: Request,
-        res: Response,
-        _next: NextFunction
-      ) => {
-        res.status(err?.httpStatusCode ?? 500).json({ error: err?.message });
-      }
-    );
+    applyErrorHandler(app);
 
     await request(app)
       .get('/cities/507f1f77bcf86cd799439011/rentOffers')
