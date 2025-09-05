@@ -24,6 +24,7 @@ export const Component = {
   HttpExceptionFilter: Symbol.for('HttpExceptionFilter'),
   ValidationExceptionFilter: Symbol.for('ValidationExceptionFilter'),
   PathTransformer: Symbol.for('PathTransformer'),
+  HealthController: Symbol.for('HealthController'),
   RedisClient: Symbol.for('RedisClient'),
   CacheService: Symbol.for('CacheService'),
   RentOfferCacheService: Symbol.for('RentOfferCacheService'),

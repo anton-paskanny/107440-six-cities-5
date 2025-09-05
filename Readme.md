@@ -199,6 +199,42 @@ MAX_REQUEST_SIZE=10mb             # Maximum request body size
 - **Redis Commander**: `localhost:8082` (Cache UI)
 - **API Server**: `localhost:4000` (REST API)
 
+#### Health Check Endpoints
+
+The application provides comprehensive health monitoring endpoints for production deployment:
+
+- **`GET /health`** - Comprehensive health check with service status
+
+  - Returns application status, uptime, version, and database/Redis connectivity
+  - HTTP 200 for healthy, 503 for unhealthy
+
+- **`GET /health/ready`** - Readiness probe for Kubernetes/Docker
+
+  - Checks if the application is ready to serve traffic
+  - Verifies database and Redis connections
+  - HTTP 200 for ready, 503 for not ready
+
+- **`GET /health/live`** - Liveness probe for Kubernetes/Docker
+  - Simple check if the application process is alive
+  - Minimal resource usage
+  - HTTP 200 for alive
+
+**Example Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-09-05T15:39:20.551Z",
+  "uptime": 360.46377,
+  "version": "5.0.0",
+  "environment": "development",
+  "services": {
+    "database": "connected",
+    "redis": "connected"
+  }
+}
+```
+
 #### Environment Setup
 
 Create a `.env` file in the root directory with the configuration variables listed above, or use the default values provided in the configuration schema.
