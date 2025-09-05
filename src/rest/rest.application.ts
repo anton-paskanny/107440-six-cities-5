@@ -18,6 +18,7 @@ import { STATIC_FILES_ROUTE, STATIC_UPLOAD_ROUTE } from './rest.constants.js';
 @injectable()
 export class RestApplication {
   private server: Express;
+  private rateLimiter: RateLimiterMiddleware;
 
   constructor(
     @inject(Component.Logger) private readonly logger: Logger,
@@ -75,6 +76,12 @@ export class RestApplication {
     }
   }
 
+  private async _initRateLimiter() {
+    // Create and initialize rate limiter after Redis is connected
+    this.rateLimiter = new RateLimiterMiddleware(this.config, this.redisClient);
+    await this.rateLimiter.initialize();
+  }
+
   private async _initControllers() {
     this.server.use('/cities', this.cityController.router);
     this.server.use('/users', this.userController.router);
@@ -93,11 +100,7 @@ export class RestApplication {
     this.server.use(helmet());
 
     // Apply rate limiting early in the middleware chain (single instance)
-    const rateLimiter = new RateLimiterMiddleware(
-      this.config,
-      this.redisClient
-    );
-    this.server.use(rateLimiter.execute.bind(rateLimiter));
+    this.server.use(this.rateLimiter.execute.bind(this.rateLimiter));
 
     // HTTP request logging with request IDs
     const httpLogger = createHttpLogger();
@@ -171,6 +174,10 @@ export class RestApplication {
     this.logger.info('Init cache…');
     await this._initCache();
     this.logger.info('Cache initialization completed');
+
+    this.logger.info('Init rate limiter…');
+    await this._initRateLimiter();
+    this.logger.info('Rate limiter initialization completed');
 
     this.logger.info('Init app-level middleware');
     await this._initMiddleware();

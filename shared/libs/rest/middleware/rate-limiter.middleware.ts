@@ -77,6 +77,11 @@ export class RateLimiterMiddleware implements Middleware {
     private readonly redisClient?: RedisClient
   ) {}
 
+  public async initialize(): Promise<void> {
+    // Initialize rate limiters after Redis is connected
+    this.initializeRateLimiters();
+  }
+
   private initializeRateLimiters(): void {
     if (this.isInitialized) {
       return;
@@ -84,52 +89,54 @@ export class RateLimiterMiddleware implements Middleware {
 
     const windowMs = this.config.get('RATE_LIMIT_WINDOW_MS');
 
-    // Use Redis store if available, otherwise fall back to in-memory
-    const storeConfig = this.redisClient?.isConnected()
-      ? {
-          store: new RedisStore({
-            sendCommand: (command: string, ...args: string[]) =>
-              this.redisClient!.getRedisInstance()!.call(
-                command,
-                ...args
-              ) as Promise<RedisReply>
-          })
-        }
-      : {};
+    // Create separate Redis store instances for each rate limiter with unique prefixes
+    const createStoreConfig = (prefix: string) =>
+      this.redisClient?.isConnected()
+        ? {
+            store: new RedisStore({
+              prefix: `rl:${prefix}:`,
+              sendCommand: (command: string, ...args: string[]) =>
+                this.redisClient!.getRedisInstance()!.call(
+                  command,
+                  ...args
+                ) as Promise<RedisReply>
+            })
+          }
+        : {};
 
     this.publicLimiter = rateLimit({
       ...RATE_LIMITS.PUBLIC,
       windowMs,
       max: this.config.get('RATE_LIMIT_MAX_PUBLIC'),
-      ...storeConfig
+      ...createStoreConfig('public')
     });
 
     this.authLimiter = rateLimit({
       ...RATE_LIMITS.AUTH,
       windowMs,
       max: this.config.get('RATE_LIMIT_MAX_AUTH'),
-      ...storeConfig
+      ...createStoreConfig('auth')
     });
 
     this.uploadLimiter = rateLimit({
       ...RATE_LIMITS.UPLOAD,
       windowMs,
       max: this.config.get('RATE_LIMIT_MAX_UPLOAD'),
-      ...storeConfig
+      ...createStoreConfig('upload')
     });
 
     this.userApiLimiter = rateLimit({
       ...RATE_LIMITS.USER_API,
       windowMs,
       max: this.config.get('RATE_LIMIT_MAX_USER_API'),
-      ...storeConfig
+      ...createStoreConfig('user-api')
     });
 
     this.isInitialized = true;
   }
 
   public execute(req: Request, res: Response, next: NextFunction): void {
-    // Initialize rate limiters if not already done
+    // Initialize rate limiters if not already done (fallback)
     if (!this.isInitialized) {
       this.initializeRateLimiters();
     }
