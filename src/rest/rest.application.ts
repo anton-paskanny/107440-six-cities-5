@@ -1,5 +1,7 @@
+/* eslint-disable node/no-process-exit */
 import { inject, injectable } from 'inversify';
 import express, { Express } from 'express';
+import { Server as HttpServer } from 'node:http';
 import cors from 'cors';
 import helmet from 'helmet';
 import { createHttpLogger } from '../../shared/libs/logger/index.js';
@@ -18,7 +20,9 @@ import { STATIC_FILES_ROUTE, STATIC_UPLOAD_ROUTE } from './rest.constants.js';
 @injectable()
 export class RestApplication {
   private server: Express;
+  private httpServer: HttpServer | null = null;
   private rateLimiter: RateLimiterMiddleware;
+  private isShuttingDown = false;
 
   constructor(
     @inject(Component.Logger) private readonly logger: Logger,
@@ -65,7 +69,78 @@ export class RestApplication {
 
   private async _initServer() {
     const port = this.config.get('PORT');
-    this.server.listen(port);
+    this.httpServer = this.server.listen(port, () => {
+      this.logger.info(`HTTP server listening on port ${port}`);
+    });
+
+    // Setup graceful shutdown
+    this.setupGracefulShutdown();
+  }
+
+  private setupGracefulShutdown() {
+    const shutdown = async (signal: string) => {
+      if (this.isShuttingDown) {
+        this.logger.warn('Shutdown already in progress, ignoring signal');
+        return;
+      }
+
+      this.isShuttingDown = true;
+      this.logger.info(`Received ${signal}, starting graceful shutdown...`);
+
+      try {
+        // Stop accepting new connections
+        if (this.httpServer) {
+          this.logger.info('Closing HTTP server...');
+          this.httpServer.close(() => {
+            this.logger.info('HTTP server closed');
+          });
+        }
+
+        // Close database connections
+        this.logger.info('Closing database connections...');
+        await this.databaseClient.disconnect();
+        this.logger.info('Database connections closed');
+
+        // Close Redis connections
+        this.logger.info('Closing Redis connections...');
+        await this.redisClient.disconnect();
+        this.logger.info('Redis connections closed');
+
+        this.logger.info('Graceful shutdown completed successfully');
+        // Force exit after cleanup is complete
+        setTimeout(() => {
+          // eslint-disable-next-line no-process-exit
+          process.exit(0);
+        }, 100);
+      } catch (error) {
+        this.logger.error('Error during graceful shutdown:', error as Error);
+        // Force exit on error
+        setTimeout(() => {
+          // eslint-disable-next-line no-process-exit
+          process.exit(1);
+        }, 100);
+      }
+    };
+
+    // Handle termination signals
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error) => {
+      this.logger.error('Uncaught Exception:', error);
+      shutdown('uncaughtException');
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason, promise) => {
+      const error =
+        reason instanceof Error ? reason : new Error(String(reason));
+      this.logger.error('Unhandled Rejection', error, {
+        promise: promise.toString()
+      });
+      shutdown('unhandledRejection');
+    });
   }
 
   private async _initCache() {

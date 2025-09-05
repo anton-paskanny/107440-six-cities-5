@@ -235,6 +235,29 @@ The application provides comprehensive health monitoring endpoints for productio
 }
 ```
 
+#### Graceful Shutdown
+
+The application implements production-ready graceful shutdown handling for safe deployments and maintenance:
+
+- **Signal Handling** - Responds to SIGTERM and SIGINT signals
+- **HTTP Server Cleanup** - Stops accepting new connections and closes the server gracefully
+- **Database Cleanup** - Closes MongoDB connections cleanly to prevent data corruption
+- **Redis Cleanup** - Closes Redis connections to prevent resource leaks
+- **Error Handling** - Handles uncaught exceptions and unhandled promise rejections
+- **Comprehensive Logging** - Logs the entire shutdown process for debugging
+
+**Shutdown Process:**
+
+1. Receives termination signal (SIGTERM/SIGINT)
+2. Stops accepting new HTTP connections
+3. Waits for ongoing requests to complete
+4. Closes database connections
+5. Closes Redis connections
+6. Logs successful shutdown completion
+7. Exits cleanly
+
+This ensures zero data loss during deployments, container restarts, and maintenance operations.
+
 #### Environment Setup
 
 Create a `.env` file in the root directory with the configuration variables listed above, or use the default values provided in the configuration schema.
