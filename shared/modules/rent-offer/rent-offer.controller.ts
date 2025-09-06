@@ -16,7 +16,11 @@ import { inject, injectable } from 'inversify';
 import { Component } from '../../types/index.js';
 import { Logger } from '../../libs/logger/index.js';
 import { fillDTO } from '../../helpers/index.js';
-import { RentOfferRdo, DetailedRentOfferRdo } from './index.js';
+import {
+  RentOfferRdo,
+  DetailedRentOfferRdo,
+  RentOfferEntity
+} from './index.js';
 import { CommentRdo, CommentService } from '../comment/index.js';
 import { RentOfferService } from './rent-offer.service.interface.js';
 import { ParamRentOfferId } from './types/param-rentOfferId.type.js';
@@ -30,6 +34,7 @@ import {
 import { CreateRentOfferDto, UpdateRentOfferDto } from './index.js';
 import { FavoriteEntity, FavoriteService } from '../favorite/index.js';
 import { GetRentOffers } from './types/get-rent-offers-request.type.js';
+import { SortOption } from '../../libs/rest/index.js';
 import { Config, RestSchema } from '../../libs/config/index.js';
 import { UploadPreviewRdo } from './rdo/upload-preview.rdo.js';
 import { UploadImagesRdo } from './rdo/upload-images.rdo.js';
@@ -115,16 +120,6 @@ export default class RentOfferController extends BaseController {
       ]
     });
     this.addRoute({
-      path: '/bundles/new',
-      method: HttpMethod.Get,
-      handler: this.getNew
-    });
-    this.addRoute({
-      path: '/bundles/discussed',
-      method: HttpMethod.Get,
-      handler: this.getDiscussed
-    });
-    this.addRoute({
       path: '/:rentOfferId/preview',
       method: HttpMethod.Post,
       handler: this.uploadPreview,
@@ -165,8 +160,26 @@ export default class RentOfferController extends BaseController {
 
   public async index({ tokenPayload, query }: GetRentOffers, resp: Response) {
     const { id } = tokenPayload || {};
+    const { limit, sort = SortOption.Default } = query;
 
-    const rentOffers = await this.rentOfferService.find(query.limit);
+    let rentOffers: DocumentType<RentOfferEntity>[];
+
+    // Handle different sorting options
+    switch (sort) {
+      case SortOption.New:
+        rentOffers = await this.rentOfferService.findNew(
+          limit || DEFAULT_NEW_OFFER_COUNT
+        );
+        break;
+      case SortOption.Discussed:
+        rentOffers = await this.rentOfferService.findDiscussed(
+          limit || DEFAULT_DISCUSSED_OFFER_COUNT
+        );
+        break;
+      default:
+        rentOffers = await this.rentOfferService.find(limit);
+        break;
+    }
 
     let favoritesObj: DocumentType<FavoriteEntity> | null;
 
@@ -270,20 +283,6 @@ export default class RentOfferController extends BaseController {
       params.rentOfferId
     );
     this.ok(res, fillDTO(CommentRdo, comments));
-  }
-
-  public async getNew(_req: Request, res: Response) {
-    const newOffers = await this.rentOfferService.findNew(
-      DEFAULT_NEW_OFFER_COUNT
-    );
-    this.ok(res, fillDTO(RentOfferRdo, newOffers));
-  }
-
-  public async getDiscussed(_req: Request, res: Response) {
-    const discussedOffers = await this.rentOfferService.findDiscussed(
-      DEFAULT_DISCUSSED_OFFER_COUNT
-    );
-    this.ok(res, fillDTO(RentOfferRdo, discussedOffers));
   }
 
   public async uploadPreview(
