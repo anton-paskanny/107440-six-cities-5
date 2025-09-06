@@ -13,16 +13,17 @@ export class RestConfig implements Config<RestSchema> {
     const parsedOutput = dotEnvConfig();
 
     if (parsedOutput.error) {
-      throw new Error(
-        "Can't read .env file. Perhaps the file does not exists."
+      this.logger.warn(
+        'No .env file found, using environment variables directly'
       );
+    } else {
+      this.logger.info('.env file found and successfully parsed!');
     }
 
     configRestSchema.load({});
     configRestSchema.validate({ allowed: 'strict', output: this.logger.info });
 
     this.config = configRestSchema.getProperties();
-    this.logger.info('.env file found and successfully parsed!');
   }
 
   public get<T extends keyof RestSchema>(key: T): RestSchema[T] {

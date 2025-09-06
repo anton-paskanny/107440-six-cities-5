@@ -1,0 +1,107 @@
+version: '3.9'
+
+services:
+  # Application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: six-cities-app
+    restart: unless-stopped
+    ports:
+      - '${PORT:-4000}:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=${PORT:-4000}
+      - HOST=${HOST:-0.0.0.0}
+      - SALT=${SALT:-your-salt-here}
+      - DB_HOST=db
+      - DB_PORT=27017
+      - DB_NAME=${DB_NAME:-six-cities}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - UPLOAD_DIRECTORY=/app/uploads
+      - STATIC_DIRECTORY_PATH=/app/static
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - six-cities-network
+    volumes:
+      - uploads:/app/uploads
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:4000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB database
+  db:
+    image: mongo:7.0
+    container_name: six-cities-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DB_NAME:-six-cities}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - six-cities-network
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: six-cities-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - six-cities-network
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'redis-cli',
+          '--no-auth-warning',
+          '-a',
+          '${REDIS_PASSWORD}',
+          'ping'
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  six-cities-network:
+    driver: bridge
