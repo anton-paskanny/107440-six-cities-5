@@ -1,0 +1,1487 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API server for «Six cities» project.",
+    "description": "* The list of resources and routes for «Six cities» project.",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "version": "2.0.0"
+  },
+  "tags": [
+    {
+      "name": "rentOffers",
+      "description": "Actions with rent offers."
+    },
+    {
+      "name": "cities",
+      "description": "Actions with cities."
+    },
+    {
+      "name": "comments",
+      "description": "Actions with rent comments."
+    },
+    {
+      "name": "users",
+      "description": "Actions with rent users."
+    },
+    {
+      "name": "favorites",
+      "description": "Actions with user favorites."
+    },
+    {
+      "name": "health",
+      "description": "Health check endpoints."
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/users/signup": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "User sign up",
+        "description": "Sign up a new user.",
+        "requestBody": {
+          "description": "The data to create a new user.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "User is signed up. User's object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The user with such an email already exists."
+          }
+        }
+      }
+    },
+    "/users/signin": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "User sign in",
+        "description": "User sign in based on login and password",
+        "requestBody": {
+          "description": "The data to sign in a user.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/userSignIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "User is signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/signInPayloadData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Incorrect user name or password."
+          },
+          "404": {
+            "description": "User is not found."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Check the user's status",
+        "description": "Returns user data",
+        "responses": {
+          "200": {
+            "description": "User is signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token"
+          }
+        }
+      }
+    },
+    "/users/logout": {
+      "post": {
+        "tags": ["users"],
+        "summary": "User logout",
+        "description": "Logs out the authenticated user",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "User successfully logged out.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/defaultPayloadData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing token"
+          }
+        }
+      }
+    },
+    "/users/{userId}/avatar": {
+      "post": {
+        "tags": ["users"],
+        "summary": "Upload avatar image",
+        "description": "Uploads an image of user's avatar. The image should be in `png` or `jpg` format.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a user"
+          }
+        ],
+        "requestBody": {
+          "description": "The avatar image file",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Avatar image file"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avatar uploaded successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/user"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/favorites": {
+      "get": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Get my favorite rent offers",
+        "description": "Returns a list of favorite rent offers for the authenticated user",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {
+            "description": "A list of favorite rent offers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/shortRentOffer"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/favorites/{rentOfferId}": {
+      "put": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Add rent offer to my favorites",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rentOfferId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rent offer added to favorites.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/defaultPayloadData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "favorites"
+        ],
+        "summary": "Remove rent offer from my favorites",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rentOfferId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rent offer removed from favorites.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/defaultPayloadData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      }
+    },
+    "/cities": {
+      "get": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "Get list of cities",
+        "description": "Returns a list of city objects.",
+        "responses": {
+          "200": {
+            "description": "Array of city objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/city"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["cities"],
+        "summary": "Create new city",
+        "description": "Creates a new city object.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "description": "The data to create a new city.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "London"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "example": 51.509865
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "example": -0.118092
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "City created successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/city"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/cities/{cityId}/rentOffers": {
+      "get": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "Get list of offers for specific city",
+        "description": "Returns a list of rent offer objects for the specified city.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a city"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of rent offer objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/getRentOffer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "City with cityId is not found"
+          }
+        }
+      }
+    },
+    "/cities/{cityId}/rentOffers/premium": {
+      "get": {
+        "tags": [
+          "cities"
+        ],
+        "summary": "Get list of premium offers for specific city",
+        "description": "Returns a list of premium rent offers (not more than 3 per request).",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cityId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a city"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of premium rent offer objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/getRentOffer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "City with cityId is not found"
+          }
+        }
+      }
+    },
+    "/rentOffers": {
+      "get": {
+        "tags": [
+          "rentOffers"
+        ],
+        "summary": "Get list of rent offers",
+        "description": "Returns a list of rent offers objects. By default it's 60 offers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 60
+            },
+            "description": "Amount of rent offers to get. If omitted, then it's 60 offers"
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["new", "discussed", "default"],
+              "default": "default"
+            },
+            "description": "Sort order for rent offers. 'new' for newest first, 'discussed' for most commented, 'default' for standard order"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of rent offer objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/getRentOffer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["rentOffers"],
+        "summary": "Create rent offer",
+        "description": "Creates a rent offer object.",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "description": "The data to create a new rent offer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createRentOffer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Rent offer object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rentOffer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/rentOffers/{offerId}": {
+      "get": {
+        "tags": [
+          "rentOffers"
+        ],
+        "summary": "Get detailed info about specific rent offer",
+        "description": "Returns a single rent offer object",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rent offer object with detailed information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rentOffer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "rentOffers"
+        ],
+        "summary": "Edit rent offer",
+        "description": "Edit an existing rent offer.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "requestBody": {
+          "description": "The data to update existing rent offer.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/editRentOffer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated rent offer object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rentOffer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rent offer not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "rentOffers"
+        ],
+        "summary": "Delete rent offer",
+        "description": "Delete an existing rent offer.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rent offer successfully deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/defaultPayloadData"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rent offer not found"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/rentOffers/{offerId}/comments": {
+      "get": {
+        "tags": ["comments"],
+        "summary": "Get comments for a specific rent offer",
+        "description": "Returns a list of comments for the specified rent offer",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of comment objects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/comment"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      }
+    },
+    "/rentOffers/{offerId}/preview": {
+      "post": {
+        "tags": ["rentOffers"],
+        "summary": "Upload preview image",
+        "description": "Uploads a preview image for a specific offer. The image should be in `png` or `jpg` format.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "requestBody": {
+          "description": "The preview image file",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "preview": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Preview image file"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Object with single preview image.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/offerPreviewImage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file format"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      }
+    },
+    "/rentOffers/{offerId}/images": {
+      "post": {
+        "tags": ["rentOffers"],
+        "summary": "Upload gallery images",
+        "description": "Uploads gallery images for a specific offer (always 6 images). The images should be in `png` or `jpg` format.",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "offerId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of a rent offer"
+          }
+        ],
+        "requestBody": {
+          "description": "The gallery image files",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "galleryImages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "maxItems": 6,
+                    "minItems": 6,
+                    "description": "Gallery image files (exactly 6 images)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Array of images.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/offerGalleryImages"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid file format or wrong number of images"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Rent offer not found"
+          }
+        }
+      }
+    },
+    "/comments": {
+      "post": {
+        "tags": [
+          "comments"
+        ],
+        "summary": "Add a new comment to a specific rent offer",
+        "description": "Returns a newly created comment object",
+        "security": [{"bearerAuth": []}],
+        "requestBody": {
+          "description": "The data to create a new comment.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createComment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "A new comment object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/comment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "description": "Returns the health status of the application",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "example": "2023-01-01T00:00:00.000Z"
+                    },
+                    "uptime": {
+                      "type": "number",
+                      "example": 12345
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Readiness check",
+        "description": "Returns whether the application is ready to serve traffic",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application is ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ready"
+                    },
+                    "database": {
+                      "type": "string",
+                      "example": "connected"
+                    },
+                    "redis": {
+                      "type": "string",
+                      "example": "connected"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Liveness check",
+        "description": "Returns whether the application is alive",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Application is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "alive"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token for authentication"
+      }
+    },
+    "schemas": {
+      "createUser": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "john.lennon@gmail.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Lennon"
+          },
+          "avatarPath": {
+            "type": "string",
+            "example": "avatar.jpg"
+          },
+          "password": {
+            "type": "string",
+            "example": "123456"
+          },
+          "type": {
+            "type": "string",
+            "example": "Usual"
+          }
+        }
+      },
+      "userSignIn": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "john.lennon@gmail.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "123456abc"
+          }
+        }
+      },
+      "getRentOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "title": {
+            "type": "string",
+            "example": "Wood and stone cozy place"
+          },
+          "description": {
+            "type": "string",
+            "example": "Lofoten Fishing has mountain views, free Wifi and free private parking, located in Å"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "city": {
+            "type": "string",
+            "example": "Amsterdam"
+          },
+          "preview": {
+            "type": "string",
+            "example": "preview.jpg"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["image-1.jpg", "image-2.jpg"]
+          },
+          "isPremium": {
+            "type": "boolean",
+            "example": true
+          },
+          "isFavorite": {
+            "type": "boolean",
+            "example": false
+          },
+          "houseType": {
+            "type": "string",
+            "example": "Apartment"
+          },
+          "rooms": {
+            "type": "number",
+            "example": 4
+          },
+          "guests": {
+            "type": "number",
+            "example": 2
+          },
+          "price": {
+            "type": "number",
+            "example": 120
+          },
+          "rating": {
+            "type": "number",
+            "example": 7
+          },
+          "commentsCount": {
+            "type": "number",
+            "example": 2
+          }
+        }
+      },
+      "createRentOffer": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Wood and stone cozy place"
+          },
+          "description": {
+            "type": "string",
+            "example": "Lofoten Fishing has mountain views, free Wifi and free private parking, located in Å"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "cityId": {
+            "type": "string",
+            "example": "1234ndsvbh34"
+          },
+          "preview": {
+            "type": "string",
+            "example": "preview.jpg"
+          },
+          "images": {
+            "type": "array",
+            "example": [
+              "image-1.jpg",
+              "image-2.jpg"
+            ]
+          },
+          "isPremium": {
+            "type": "boolean",
+            "example": true
+          },
+          "rating": {
+            "type": "number",
+            "example": 8
+          },
+          "houseType": {
+            "type": "string",
+            "example": "Apartment"
+          },
+          "rooms": {
+            "type": "number",
+            "example": 4
+          },
+          "guests": {
+            "type": "number",
+            "example": 2
+          },
+          "price": {
+            "type": "number",
+            "example": 120
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["Laptop", "Washer"]
+          },
+          "authorId": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 51.509865
+          },
+          "longitude": {
+            "type": "number",
+            "example": -0.118092
+          }
+        }
+      },
+      "editRentOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "title": {
+            "type": "string",
+            "example": "Wood and stone cozy place"
+          },
+          "description": {
+            "type": "string",
+            "example": "Lofoten Fishing has mountain views, free Wifi and free private parking, located in Å"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "cityId": {
+            "type": "string",
+            "example": "123234bsdhb"
+          },
+          "preview": {
+            "type": "string",
+            "example": "preview.jpg"
+          },
+          "images": {
+            "type": "array",
+            "example": [
+              "image-1.jpg",
+              "image-2.jpg"
+            ]
+          },
+          "isPremium": {
+            "type": "boolean",
+            "example": true
+          },
+          "rating": {
+            "type": "number",
+            "example": 8
+          },
+          "houseType": {
+            "type": "string",
+            "example": "Apartment"
+          },
+          "rooms": {
+            "type": "number",
+            "example": 4
+          },
+          "guests": {
+            "type": "number",
+            "example": 2
+          },
+          "price": {
+            "type": "number",
+            "example": 120
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["Laptop", "Washer"]
+          }
+        }
+      },
+      "createComment": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "example": "My awesome comment"
+          },
+          "userId": {
+            "type": "string",
+            "example": "2322kd2kemd2"
+          },
+          "rentOfferId": {
+            "type": "string",
+            "example": "1231lx0sa2kemd2"
+          }
+        }
+      },
+      "user": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "email": {
+            "type": "string",
+            "example": "john.lennon@gmail.com"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Lennon"
+          }
+        }
+      },
+      "city": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "name": {
+            "type": "string",
+            "example": "Amsterdam"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 52.370216
+          },
+          "longitude": {
+            "type": "number",
+            "example": 4.895168
+          }
+        }
+      },
+      "rentOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "title": {
+            "type": "string",
+            "example": "Wood and stone cozy place"
+          },
+          "description": {
+            "type": "string",
+            "example": "Lofoten Fishing has mountain views, free Wifi and free private parking, located in Å"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "city": {
+            "type": "string",
+            "example": "Amsterdam"
+          },
+          "preview": {
+            "type": "string",
+            "example": "preview.jpg"
+          },
+          "images": {
+            "type": "array",
+            "example": [
+              "image-1.jpg",
+              "image-2.jpg"
+            ]
+          },
+          "isPremium": {
+            "type": "boolean",
+            "example": true
+          },
+          "isFavorite": {
+            "type": "boolean",
+            "example": false
+          },
+          "rating": {
+            "type": "number",
+            "example": 8
+          },
+          "houseType": {
+            "type": "string",
+            "example": "Apartment"
+          },
+          "rooms": {
+            "type": "number",
+            "example": 4
+          },
+          "guests": {
+            "type": "number",
+            "example": 2
+          },
+          "price": {
+            "type": "number",
+            "example": 120
+          },
+          "features": {
+            "type": "array",
+            "example": [
+              "Laptop",
+              "Washer"
+            ]
+          },
+          "authorId": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "commentCount": {
+            "type": "number",
+            "example": 11
+          }
+        }
+      },
+      "shortRentOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "title": {
+            "type": "string",
+            "example": "Wood and stone cozy place"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "city": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Amsterdam"
+              },
+              "latitude": {
+                "type": "number",
+                "example": 52.370216
+              },
+              "longitude": {
+                "type": "number",
+                "example": 4.895168
+              }
+            }
+          },
+          "preview": {
+            "type": "string",
+            "example": "preview.jpg"
+          },
+          "isPremium": {
+            "type": "boolean",
+            "example": true
+          },
+          "rating": {
+            "type": "number",
+            "example": 8
+          },
+          "houseType": {
+            "type": "string",
+            "example": "Apartment"
+          },
+          "price": {
+            "type": "number",
+            "example": 120
+          },
+          "commentCount": {
+            "type": "number",
+            "example": 11
+          }
+        }
+      },
+      "comment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "6329c3d6a04ab1061c6425ea"
+          },
+          "text": {
+            "type": "string",
+            "example": "My awesome comment"
+          },
+          "publishDate": {
+            "type": "string",
+            "example": "2022-04-06T08:45:40.283Z"
+          },
+          "user": {
+            "$ref": "#/components/schemas/user"
+          }
+        }
+      },
+      "defaultPayloadData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "The resource was succesfully deleted/updated"
+          }
+        }
+      },
+      "signInPayloadData": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "The resource was succesfully deleted/updated"
+          },
+          "token": {
+            "type": "string",
+            "example": "123bcv!87KL"
+          }
+        }
+      },
+      "offerGalleryImages": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "offerPreviewImage": {
+        "type": "object",
+        "properties": {
+          "preview": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
