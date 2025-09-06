@@ -19,6 +19,145 @@ This is a backend service for the "Six Cities" project. The main features includ
 - **`shared`** - Shared libraries and utilities
 - **`mocks`** - Mock data and server configuration
 
+## Getting Started
+
+### Development Setup
+
+1. **Clone the repository**
+2. **Install dependencies**: `npm install`
+3. **Configure environment variables** (see Configuration section below)
+4. **Start services with Docker Compose**:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+5. **Start development server**: `npm run start:dev`
+6. **Build for production**: `npm run build`
+
+### Services Available
+
+- **MongoDB**: `localhost:27017` (Database)
+- **Mongo Express**: `localhost:8081` (Database UI)
+- **Redis**: `localhost:6379` (Cache & Rate Limiting)
+- **Redis Commander**: `localhost:8082` (Cache UI)
+- **API Server**: `localhost:4000` (REST API)
+
+### Production Deployment
+
+#### Docker Production Setup
+
+1. **Build production image**:
+
+   ```bash
+   docker build -t six-cities-api .
+   ```
+
+2. **Deploy with Docker Compose**:
+
+   ```bash
+   # Using the provided deployment script
+   ./deploy.sh
+
+   # Or manually
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+3. **Production services**:
+   - **API Server**: `localhost:4000` (REST API)
+   - **MongoDB**: `localhost:27017` (Database)
+   - **Redis**: `localhost:6379` (Cache & Rate Limiting)
+
+#### Environment Configuration
+
+1. **Edit the `.env.production` file** with your production values:
+   ```bash
+   nano .env.production  # or your preferred editor
+   ```
+
+The Docker Compose configuration uses `env_file: .env.production` to read environment variables directly from the `.env.production` file.
+
+**Required variables to set in `.env.production`:**
+
+```bash
+# Database Configuration
+DB_HOST=db
+DB_PORT=27017
+DB_NAME=six-cities
+DB_USER=root
+DB_PASSWORD=your-secure-database-password
+
+# Redis Configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your-secure-redis-password
+REDIS_DB=0
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=4000
+NODE_ENV=production
+
+# Security Configuration
+JWT_SECRET=your-very-secure-jwt-secret-key-minimum-32-characters
+SALT=your-very-secure-salt-value-minimum-16-characters
+MAX_REQUEST_SIZE=10mb
+
+# Rate Limiting Configuration
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_PUBLIC=100
+RATE_LIMIT_MAX_AUTH=5
+RATE_LIMIT_MAX_UPLOAD=10
+RATE_LIMIT_MAX_USER_API=1000
+
+# Logging Configuration
+LOG_LEVEL=info
+LOG_FILE=logs/rest.log
+
+# File Upload Configuration
+UPLOAD_DIRECTORY=uploads
+MAX_FILE_SIZE=5242880
+```
+
+**Important Security Notes:**
+
+- Use strong, unique passwords for database and Redis
+- Generate a secure JWT secret (minimum 32 characters)
+- Use a secure salt value (minimum 16 characters)
+- Never commit the actual `.env` file to version control
+
+#### Health Monitoring
+
+The application provides comprehensive health monitoring endpoints:
+
+- **`GET /health`** - Comprehensive health check with service status
+- **`GET /health/ready`** - Readiness probe for Kubernetes/Docker
+- **`GET /health/live`** - Liveness probe for Kubernetes/Docker
+
+**Example Health Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-09-05T15:39:20.551Z",
+  "uptime": 360.46377,
+  "version": "5.0.0",
+  "environment": "production",
+  "services": {
+    "database": "connected",
+    "redis": "connected"
+  }
+}
+```
+
+#### Graceful Shutdown
+
+The application implements production-ready graceful shutdown handling:
+
+- **Signal Handling** - Responds to SIGTERM and SIGINT signals
+- **HTTP Server Cleanup** - Stops accepting new connections gracefully
+- **Database Cleanup** - Closes MongoDB connections cleanly
+- **Redis Cleanup** - Closes Redis connections to prevent resource leaks
+- **Error Handling** - Handles uncaught exceptions and unhandled promise rejections
+
 ## Technical Architecture
 
 ### Backend Services
@@ -176,90 +315,5 @@ JWT_SECRET=your-secret-key       # JWT signing secret
 SALT=your-salt-value             # Password hashing salt
 MAX_REQUEST_SIZE=10mb             # Maximum request body size
 ```
-
-### Getting Started
-
-#### Development Setup
-
-1. **Clone the repository**
-2. **Install dependencies**: `npm install`
-3. **Configure environment variables** (see above)
-4. **Start services with Docker Compose**:
-   ```bash
-   docker-compose -f docker-compose.dev.yml up -d
-   ```
-5. **Start development server**: `npm run start:dev`
-6. **Build for production**: `npm run build`
-
-#### Services Available
-
-- **MongoDB**: `localhost:27017` (Database)
-- **Mongo Express**: `localhost:8081` (Database UI)
-- **Redis**: `localhost:6379` (Cache & Rate Limiting)
-- **Redis Commander**: `localhost:8082` (Cache UI)
-- **API Server**: `localhost:4000` (REST API)
-
-#### Health Check Endpoints
-
-The application provides comprehensive health monitoring endpoints for production deployment:
-
-- **`GET /health`** - Comprehensive health check with service status
-
-  - Returns application status, uptime, version, and database/Redis connectivity
-  - HTTP 200 for healthy, 503 for unhealthy
-
-- **`GET /health/ready`** - Readiness probe for Kubernetes/Docker
-
-  - Checks if the application is ready to serve traffic
-  - Verifies database and Redis connections
-  - HTTP 200 for ready, 503 for not ready
-
-- **`GET /health/live`** - Liveness probe for Kubernetes/Docker
-  - Simple check if the application process is alive
-  - Minimal resource usage
-  - HTTP 200 for alive
-
-**Example Response:**
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-09-05T15:39:20.551Z",
-  "uptime": 360.46377,
-  "version": "5.0.0",
-  "environment": "development",
-  "services": {
-    "database": "connected",
-    "redis": "connected"
-  }
-}
-```
-
-#### Graceful Shutdown
-
-The application implements production-ready graceful shutdown handling for safe deployments and maintenance:
-
-- **Signal Handling** - Responds to SIGTERM and SIGINT signals
-- **HTTP Server Cleanup** - Stops accepting new connections and closes the server gracefully
-- **Database Cleanup** - Closes MongoDB connections cleanly to prevent data corruption
-- **Redis Cleanup** - Closes Redis connections to prevent resource leaks
-- **Error Handling** - Handles uncaught exceptions and unhandled promise rejections
-- **Comprehensive Logging** - Logs the entire shutdown process for debugging
-
-**Shutdown Process:**
-
-1. Receives termination signal (SIGTERM/SIGINT)
-2. Stops accepting new HTTP connections
-3. Waits for ongoing requests to complete
-4. Closes database connections
-5. Closes Redis connections
-6. Logs successful shutdown completion
-7. Exits cleanly
-
-This ensures zero data loss during deployments, container restarts, and maintenance operations.
-
-#### Environment Setup
-
-Create a `.env` file in the root directory with the configuration variables listed above, or use the default values provided in the configuration schema.
 
 The repository was created for learning on the professional online course [Node.js. REST API Design](https://htmlacademy.ru/profession/fullstack) from [HTML Academy](https://htmlacademy.ru).

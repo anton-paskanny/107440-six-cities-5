@@ -9,6 +9,7 @@ services:
       target: production
     container_name: six-cities-app
     restart: unless-stopped
+    env_file: .env.production
     ports:
       - '${PORT:-4000}:4000'
     environment:
